@@ -3,51 +3,109 @@
 #include <stdio.h>
 #include <string.h>
 #include "bsp/board.h"
+#include "tinyusb/src/class/hid/hid.h"
 #include "tusb.h"
 #include "tusb_config.h"
 #include "usb_descriptors.h"
-
 extern const char* MAIN_PAYLOAD[];
 extern const int MAIN_PAYLOAD_LEN;
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
-// executes lists of keypresses / commands
 static int current_line=0;
-// KEYBOARD STATE here
 #define NONE 0
 #define PRESS_KEY 1
 #define HOLD_KEY 2
 #define RELEASE_KEY 3
-
 const char* SPACE_KEY_COMMAND = "SPACE";
 const char* ENTER_KEY_COMMAND = "ENTER";
-const char* SUPER_MODIFIER_COMMAND = "SUPER";
-const char* SHIFT_MODIFIER_COMMNAD = "SHIFT";
+
+const char* LEFT_SUPER_MODIFIER_COMMAND = "LSUPER";
+const char* RIGHT_SUPER_MODIFIER_COMMAND = "RSUPER";
+
+const char* LSHIFT_MODIFIER_COMMAND = "LSHIFT";
+const char* RSHIFT_MODIFIER_COMMAND = "RSHIFT";
+
+const char* LEFT_ALT_MODIFIER_COMMAND = "LALT";
+const char* RIGHT_ALT_MODIFIER_COMMAND = "RALT";
+
+const char* LEFT_CTRL_MODIFIER_COMMAND = "LCTRL";
+const char* RIGHT_CTRL_MODIFIER_COMMAND = "RCTRL";
+
+
+
 const uint8_t NUMBER_KEY_OFFSET = 19;
 const uint8_t LOWERCASE_CHARACTER_KEY_OFFSET = 93;
 
-/*the 9th bit of the Return Value indicates if it is a keymodifier or a Special Key*/
-uint16_t parse_special_key(const char* command_str,int* pos,int len){
+struct Special_key{
+    uint8_t key;
+    uint8_t keymod;
+}Special_key;
+
+struct Special_key parse_special_key(const char* command_str,int* pos,int len){
     char chs[256];
     int chs_i = 0;
 
-    while(command_str[*pos] != ' ' && command_str[*pos] != '\0' ){
-        chs[chs_i] = command_str[*pos];
+    struct Special_key special_key;
+    special_key.key = 0;
+    special_key.keymod = 0;
+    // get the rest of the string
+    while(command_str[ (*pos) ] != ' ' && command_str[ (*pos) ] != '\0' ){
+        chs[chs_i] = command_str[ (*pos) ];
         (*pos) += 1;
+        chs_i += 1;
     }
 
-    if( strcmp(chs,SPACE_KEY_COMMAND) == 0){
-        return HID_KEY_SPACE;
+    if(strcmp(chs,SPACE_KEY_COMMAND) == 0){
+        special_key.key = HID_KEY_SPACE;
+        return special_key;
     }
-
     if(strcmp(chs, ENTER_KEY_COMMAND) == 0){
-        return HID_KEY_ENTER;
+        special_key.key = HID_KEY_ENTER;
+        return special_key;
     }
 
-    if(strcmp(chs,SUPER_MODIFIER_COMMAND)){
-        return HID_KEY_0;
+    if(strcmp(chs,LEFT_SUPER_MODIFIER_COMMAND) == 0){
+        special_key.keymod = KEYBOARD_MODIFIER_LEFTGUI;
+        return special_key;
     }
+    if(strcmp(chs,RIGHT_SUPER_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_RIGHTGUI;
+        return special_key;
+    }
+
+    if(strcmp(chs,LSHIFT_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_LEFTSHIFT;
+        return special_key;
+    }
+
+    if(strcmp(chs,RSHIFT_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_RIGHTSHIFT;
+        return special_key;
+    }
+
+    if(strcmp(chs,LEFT_ALT_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_LEFTALT;
+        return special_key;
+    }
+    if(strcmp(chs,RIGHT_ALT_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_RIGHTALT;
+        return special_key;
+    }
+
+    if(strcmp(chs,LEFT_CTRL_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_LEFTCTRL;
+        return special_key;
+    }
+
+    if(strcmp(chs,RIGHT_CTRL_MODIFIER_COMMAND)== 0){
+        special_key.keymod = KEYBOARD_MODIFIER_RIGHTCTRL;
+        return special_key;
+    }
+
+    return special_key;
 }
+
+
 
 
 uint8_t parse_key(const char ascii_code){
@@ -76,10 +134,9 @@ void execute_ducky_payload(){
 
     const char * command_str = MAIN_PAYLOAD[current_line];
     int len = strlen(command_str);
-    uint8_t key_action=NONE;
+    uint8_t key_action = NONE;
     uint8_t keys_i = 0;
-    uint8_t keymod=0;
-    uint8_t is_special_key=0;
+    uint8_t keymod = 0;
     
 
     if( (command_str[0] == 'P' || command_str[0] == 'p')){
@@ -87,16 +144,25 @@ void execute_ducky_payload(){
     }
 
     for(int i = 1; i < len ; i++){
-        if(command_str[i] != ' ' ){
+        // 0-9 a-z
+        if(command_str[i] != ' ' && command_str[i] > 96 || ( command_str[i] > 47 && command_str[i] < 58) ){
             keys[keys_i] = parse_key(command_str[i]);
             keys_i++;
+        }
+        // Special Keys like Numpad0-9,Enter ...
+        else if(command_str[i] != ' '){
+            struct Special_key sp_key = parse_special_key(command_str,&i,len);
+            keymod |= sp_key.keymod;
+            if(sp_key.key != 0){
+                keys[keys_i] = sp_key.key;
+                keys_i++;
+            }
         }
         else{
             continue;
         }
     }
-    board_led_write(1);
-    uint8_t pressed = send_hid_keyboard_report(keys,0);
+    uint8_t pressed = send_hid_keyboard_report(keys,keymod);
     if(pressed == 0){
         return;
     }

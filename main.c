@@ -64,8 +64,7 @@ void main_loop(void){
   prev = board_millis();
   now = board_millis();
   while(!t){
-      now = board_millis();
-
+    now = board_millis();
     if(now >= (prev + 100) && should_reset_keys == 0){
       //k[0] = 0x4;
       res = send_hid_keyboard_report(k,0);

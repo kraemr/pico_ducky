@@ -19,11 +19,11 @@ extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 extern const uint8_t REPEAT_DUCKY_SCRIPT;
 
 static int current_line=0;
-
 #define NONE 0
 #define PRESS_KEY 1
 #define HOLD_KEY 2
 #define RELEASE_KEY 3
+
 // ####### KEYS #######
 // Space key
 const char* SPACE_KEY_COMMAND = "SPACE";

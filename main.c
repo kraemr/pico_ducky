@@ -34,24 +34,12 @@
 #include "usb_descriptors.h"
 #include "pico/stdlib.h"
 
-//--------------------------------------------------------------------+
-// MACRO CONSTANT TYPEDEF PROTYPES
-//--------------------------------------------------------------------+
-
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
-enum  {
-  KEYPRESS_DELAY = 200,
-};
-
-uint32_t keypress_delay_ms = KEYPRESS_DELAY;
 void led_blinking_task(void);
 void hid_task(void);
 extern void bruteforce_task();
 extern void execute_ducky_payload();
+extern const uint16_t KEYPRESS_DELAY_MS;
+
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 
 void main_loop(void){
@@ -65,13 +53,13 @@ void main_loop(void){
   now = board_millis();
   while(!t){
     now = board_millis();
-    if(now >= (prev + 100) && should_reset_keys == 0){
+    if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0){
       //k[0] = 0x4;
       res = send_hid_keyboard_report(k,0);
       prev = board_millis();
       should_reset_keys = 1;
     }
-    else if(now >= (prev + 100) && should_reset_keys == 1){
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1){
       k[0] = 0x0;
       send_hid_keyboard_report(k,0);
       prev = board_millis();
@@ -92,12 +80,12 @@ prev = 0;
     //  sending {0x4,0x4,0,0,0} would not press the a key two times instead it presses once and ignores the other one
     // sending {0x4} and directly after {0x4} will fail, the solution is to send {0,0,0,0,0,0} everytime after a key is pressed
     /*https://wiki.osdev.org/USB_Human_Interface_Devices*/
-    if(now >= (prev + 100) && should_reset_keys == 0){
+    if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0){
       execute_ducky_payload();
       prev = board_millis();
       should_reset_keys = 1;
     }
-    else if(now >= (prev + 100) && should_reset_keys == 1){
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1){
         send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
         prev = board_millis();
         should_reset_keys = 0;

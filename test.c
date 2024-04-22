@@ -1,9 +1,11 @@
-extern void execute_ducky_payload();
 #include <stdio.h>
-extern const int MAIN_PAYLOAD_LEN;
+#include <stdint.h>
 
 int main(){
-    for(int i = 0; i < MAIN_PAYLOAD_LEN;i++){
-        execute_ducky_payload();
-    }
+    uint16_t key = 0b1111111110000000;
+    uint8_t keymod;
+    uint8_t actual_key;
+    keymod = key & 255;
+    actual_key = key >> 8;
+    printf("%d %d",keymod,actual_key);
 }

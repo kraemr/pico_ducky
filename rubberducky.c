@@ -2,50 +2,46 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+
 #ifndef TESTING
     #include "bsp/board.h"
     #include "tusb.h"
     #include "tusb_config.h"
     #include "tinyusb/src/class/hid/hid.h"
 #endif
-
 #include "usb_descriptors.h"
 
 
-extern const char* MAIN_PAYLOAD[];
+#ifdef PARSE
+    extern const char* MAIN_PAYLOAD[];
+#endif
+
+#ifdef NO_PARSE
+    extern uint16_t MAIN_PAYLOAD[];
+#endif
+
 extern const int MAIN_PAYLOAD_LEN;
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 extern const uint8_t REPEAT_DUCKY_SCRIPT;
-
 static int current_line=0;
 #define NONE 0
 #define PRESS_KEY 1
 #define HOLD_KEY 2
 #define RELEASE_KEY 3
-
 // ####### KEYS #######
-// Space key
+
 const char* SPACE_KEY_COMMAND = "SPACE";
-// Enter key
 const char* ENTER_KEY_COMMAND = "ENTER";
-// ESCAPE key
 const char* ESCAPE_KEY_COMMAND = "ESC";
-// TABULATOR
 const char* TAB_KEY_COMMAND = "TAB";
-// - key
 const char* MINUS_KEY_COMMAND = "MINUS";
-// = key
 const char* EQUAL_KEY_COMMAND = "EQ";
-// (
 const char* LEFT_BRACKET_COMMAND = "LBRACKET";
-// )
 const char* RIGHT_BRACKET_COMMAND = "RBRACKET";
-// BACKSLASH
 const char* BACKSLASH_COMMAND = "BSLASH";
-// ,
 const char* COMMA_COMMAND = "COMMA";
-// Period
 const char* PERIOD_COMMAND = "PERIOD";
 const char* SLASH_COMMAND = "SLASH";
 const char* CAPSLOCK_COMMAND = "CAPSLOCK";
@@ -90,9 +86,6 @@ const char* RIGHT_ARROW_COMMAND = "RIGHT";
 const char* LEFT_ARROW_COMMAND = "LEFT";
 const char* UP_ARROW_COMMAND = "UP";
 const char* DOWN_ARROW_COMMAND = "DOWN";
-
-
-
 // ####### KEYS #######
 
 // ####### MODIFIERS #######
@@ -106,14 +99,38 @@ const char* LEFT_CTRL_MODIFIER_COMMAND = "LCTRL";
 const char* RIGHT_CTRL_MODIFIER_COMMAND = "RCTRL";
 const uint8_t NUMBER_KEY_OFFSET = 19;
 const uint8_t LOWERCASE_CHARACTER_KEY_OFFSET = 93;
+
+
+const char* LANG1_COMMAND = "LANG1";
+const char* LANG2_COMMAND = "LANG2";
+const char* LANG3_COMMAND = "LANG3";
+const char* LANG4_COMMAND = "LANG4";
+const char* LANG5_COMMAND = "LANG5";
+const char* LANG6_COMMAND = "LANG6";
+const char* LANG7_COMMAND = "LANG7";
+const char* LANG8_COMMAND = "LANG8";
+const char* LANG9_COMMAND = "LANG9";
+
+const char* GRAVE_COMMAND = "GRAVE";
+const char* SEMICOLON_COMMAND = "SEMICOLON";
+const char* APOSTROPHE_COMMAND = "APOSTROPHE";
+
+const char* KEYPAD_1_COMMAND = "KEYPAD1";
+const char* KEYPAD_2_COMMAND = "KEYPAD2";
+const char* KEYPAD_3_COMMAND = "KEYPAD3";
+const char* KEYPAD_4_COMMAND = "KEYPAD4";
+const char* KEYPAD_5_COMMAND = "KEYPAD5";
+const char* KEYPAD_6_COMMAND = "KEYPAD6";
+const char* KEYPAD_7_COMMAND = "KEYPAD7";
+const char* KEYPAD_8_COMMAND = "KEYPAD8";
+const char* KEYPAD_9_COMMAND = "KEYPAD9";
 // ####### MODIFIERS #######
-
-
 
 struct Special_key{
     uint8_t key;
     uint8_t keymod;
 }Special_key;
+
 void set_special_key(struct Special_key* sp_key_ref,const char chs[256],const char* command,const uint8_t hid_key,const uint8_t hid_key_mod,const uint8_t chs_len){
     if(strncmp(chs,command,chs_len) == 0){
         sp_key_ref->key = hid_key;
@@ -147,9 +164,37 @@ struct Special_key parse_special_key(const char* command_str,int* pos,int len){
     set_special_key(&special_key,chs,LEFT_BRACKET_COMMAND,HID_KEY_BRACKET_LEFT,0,chs_i);
     set_special_key(&special_key,chs,RIGHT_BRACKET_COMMAND,HID_KEY_BRACKET_RIGHT,0,chs_i);
     set_special_key(&special_key,chs,BACKSLASH_COMMAND,HID_KEY_BACKSLASH,0,chs_i);
+    set_special_key(&special_key,chs,SLASH_COMMAND,HID_KEY_SLASH,0,chs_i);
+
     set_special_key(&special_key,chs,COMMA_COMMAND,HID_KEY_COMMA,0,chs_i);
     set_special_key(&special_key,chs,PERIOD_COMMAND,HID_KEY_PERIOD,0,chs_i);
     set_special_key(&special_key,chs,CAPSLOCK_COMMAND,HID_KEY_CAPS_LOCK,0,chs_i);
+
+    set_special_key(&special_key,chs,SEMICOLON_COMMAND,HID_KEY_SEMICOLON,0,chs_i);
+    set_special_key(&special_key,chs,APOSTROPHE_COMMAND,HID_KEY_APOSTROPHE,0,chs_i);
+    set_special_key(&special_key,chs,GRAVE_COMMAND,HID_KEY_GRAVE,0,chs_i);
+
+    set_special_key(&special_key,chs,LANG1_COMMAND,HID_KEY_LANG1,0,chs_i);
+    set_special_key(&special_key,chs,LANG2_COMMAND,HID_KEY_LANG2,0,chs_i);
+    set_special_key(&special_key,chs,LANG3_COMMAND,HID_KEY_LANG3,0,chs_i);
+    set_special_key(&special_key,chs,LANG4_COMMAND,HID_KEY_LANG4,0,chs_i);
+    set_special_key(&special_key,chs,LANG5_COMMAND,HID_KEY_LANG5,0,chs_i);
+    set_special_key(&special_key,chs,LANG6_COMMAND,HID_KEY_LANG6,0,chs_i);
+    set_special_key(&special_key,chs,LANG7_COMMAND,HID_KEY_LANG7,0,chs_i);
+    set_special_key(&special_key,chs,LANG8_COMMAND,HID_KEY_LANG8,0,chs_i);
+    set_special_key(&special_key,chs,LANG9_COMMAND,HID_KEY_LANG9,0,chs_i);
+
+    set_special_key(&special_key,chs,KEYPAD_1_COMMAND,HID_KEY_KEYPAD_1,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_2_COMMAND,HID_KEY_KEYPAD_2,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_3_COMMAND,HID_KEY_KEYPAD_3,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_4_COMMAND,HID_KEY_KEYPAD_4,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_5_COMMAND,HID_KEY_KEYPAD_5,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_6_COMMAND,HID_KEY_KEYPAD_6,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_7_COMMAND,HID_KEY_KEYPAD_7,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_8_COMMAND,HID_KEY_KEYPAD_8,0,chs_i);
+    set_special_key(&special_key,chs,KEYPAD_9_COMMAND,HID_KEY_KEYPAD_9,0,chs_i);
+
+
 
     set_special_key(&special_key,chs,F1_COMMAND,HID_KEY_F1,0,chs_i);
     set_special_key(&special_key,chs,F2_COMMAND,HID_KEY_F2,0,chs_i);
@@ -191,40 +236,21 @@ uint8_t parse_key(const char ascii_code){
     }
 
 
-void execute_ducky_payload(){
-    uint8_t keys[6]={0,0,0,0,0,0};
-
-    if(current_line >= MAIN_PAYLOAD_LEN){
-        if(REPEAT_DUCKY_SCRIPT == 0){
-            return;
-        }else{
-            current_line = 0;
-            return;
-        }
-    }
-
-    const char * command_str = MAIN_PAYLOAD[current_line];
-    int len = strlen(command_str);
+uint8_t parse_and_exec(const char* command_str,int len,uint8_t keys[6]){
     uint8_t key_action = NONE;
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
-
-
     if( (command_str[0] == 'P' || command_str[0] == 'p')){
-            key_action = PRESS_KEY;
-    }
-
+                key_action = PRESS_KEY;
+        }
     for(int i = 1; i < len ; i++){
-        // 0-9 a-z
-        if((command_str[i] >= 'a') && (command_str[i] <= 'z') || ( command_str[i] >= '0' && command_str[i] <= '9') ){
+        if((command_str[i] >= 'a' && command_str[i] <= 'z') || ( command_str[i] >= '0' && command_str[i] <= '9') ){
             keys[keys_i] = parse_key(command_str[i]);
             keys_i++;
         }
-        // Special Keys like Numpad0-9,Enter ...
         else if(command_str[i] != ' '){
             struct Special_key sp_key = parse_special_key(command_str,&i,len);
             keymod |= sp_key.keymod;
-            printf("key: %d\n", sp_key.key);
             if(sp_key.key != 0){
                 keys[keys_i] = sp_key.key;
                 keys_i++;
@@ -234,15 +260,57 @@ void execute_ducky_payload(){
             continue;
         }
     }
-    #ifndef TESTING
-    uint8_t pressed = send_hid_keyboard_report(keys,keymod);
-    if(pressed == 0){
-        return;
+    return keymod;
+}
+
+// returns the keymod
+uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
+    uint8_t keymod;
+    uint8_t actual_key;
+    actual_key = key & 255;
+    keymod = key >> 8;
+    keys[0] = actual_key;
+    return keymod;
+}
+
+
+
+
+void execute_ducky_payload(){
+    uint8_t keys[6]={0,0,0,0,0,0};
+    if(current_line >= MAIN_PAYLOAD_LEN){
+        if(REPEAT_DUCKY_SCRIPT == 0){
+            return;
+        }else{
+            current_line = 0;
+            return;
+        }
     }
+
+    uint8_t key_action = NONE;
+    uint8_t keys_i = 0;
+    uint8_t keymod = 0;
+
+    #ifdef PARSE
+        const char * command_str = MAIN_PAYLOAD[current_line];
+        int len = strlen(command_str);
+        keymod = parse_and_exec(command_str,len,keys);
+    #endif
+
+    #ifdef NO_PARSE
+        uint16_t mp = MAIN_PAYLOAD[current_line];
+        keymod =        exec_keypress(mp,keys);
+    #endif
+
+    #ifndef TESTING
+        uint8_t pressed = send_hid_keyboard_report(keys,keymod);
+        if(pressed == 0){
+            return;
+        }
     #endif
 
     #ifdef TESTING
-    printf("current line: %d, %d %d %d %d %d %d",current_line,keys[0],keys[1],keys[2],keys[3],keys[4],keys[5]);
+        printf("current line: %d, %d %d %d %d %d %d",current_line,keys[0],keys[1],keys[2],keys[3],keys[4],keys[5]);
     #endif
 
     current_line++;

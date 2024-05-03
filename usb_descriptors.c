@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -222,6 +222,5 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
 
   // first byte is length (including header), second byte is string type
   _desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2*chr_count + 2);
-
   return _desc_str;
 }

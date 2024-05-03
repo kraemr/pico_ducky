@@ -8,7 +8,6 @@ pico_sdk_init()
 
 add_executable(${PROJECT})
 target_sources(${PROJECT} PUBLIC
-  ${CMAKE_CURRENT_LIST_DIR}/bruteforce.c
   ${CMAKE_CURRENT_LIST_DIR}/main.c
   ${CMAKE_CURRENT_LIST_DIR}/usb_descriptors.c
   ${CMAKE_CURRENT_LIST_DIR}/rubberducky.c

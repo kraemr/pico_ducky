@@ -40,8 +40,8 @@ In MAIN_PAYLOAD You Would send for example "a" ONE time like this
 #define MAIN_PAYLOAD_LEN=1
 const uint8_t BOARD_BUTTON_CONFIRMATION_NEEDED = 1;
 const uint8_t REPEAT_DUCKY_SCRIPT = 0;
-const uint16_t MAIN_PAYLOAD[]={
-0x4
+const uint8_t MAIN_PAYLOAD[MAIN_PAYLOAD_LEN_DEF][7]={
+{0,0x4,0,0,0,0,0},
 };
 ```
 
@@ -54,18 +54,16 @@ so keycode for a 0x4 OR'd with L_SHIFT will produce "A"
 #define MAIN_PAYLOAD_LEN=1
 const uint8_t BOARD_BUTTON_CONFIRMATION_NEEDED = 1;
 const uint8_t REPEAT_DUCKY_SCRIPT = 0;
-
-#define L_CTRL   0b0000000100000000
-#define L_SHIFT  0b0000001000000000
-#define L_ALT    0b0000010000000000
-#define L_GUI    0b0000100000000000
-#define R_CTRL   0b0001000000000000
-#define R_SHIFT  0b0010000000000000
-#define R_ALT    0b0100000000000000
-#define R_GUI    0b1000000000000000
-
-const uint16_t MAIN_PAYLOAD[]={
-0x4 | L_SHIFT
+#define L_CTRL    0b00000001
+#define L_SHIFT   0b00000010
+#define L_ALT     0b00000100
+#define L_SUPER   0b00001000
+#define R_CTRL    0b00010000
+#define R_SHIFT   0b00100000
+#define R_ALT     0b01000000
+#define R_SUPER   0b10000000
+const uint8_t MAIN_PAYLOAD[MAIN_PAYLOAD_LEN_DEF][7]={
+{L_SHIFT,0x4,0,0,0,0,0},
 };
 ```
 
@@ -75,17 +73,15 @@ The following Payload will press "A" repeatedly
 #define MAIN_PAYLOAD_LEN=1
 const uint8_t BOARD_BUTTON_CONFIRMATION_NEEDED = 1;
 const uint8_t REPEAT_DUCKY_SCRIPT = 1;
-
-#define L_CTRL   0b0000000100000000
-#define L_SHIFT  0b0000001000000000
-#define L_ALT    0b0000010000000000
-#define L_GUI    0b0000100000000000
-#define R_CTRL   0b0001000000000000
-#define R_SHIFT  0b0010000000000000
-#define R_ALT    0b0100000000000000
-#define R_GUI    0b1000000000000000
-
-const uint16_t MAIN_PAYLOAD[]={
-0x4 | L_SHIFT
+#define L_CTRL    0b00000001
+#define L_SHIFT   0b00000010
+#define L_ALT     0b00000100
+#define L_SUPER   0b00001000
+#define R_CTRL    0b00010000
+#define R_SHIFT   0b00100000
+#define R_ALT     0b01000000
+#define R_SUPER   0b10000000
+const uint8_t MAIN_PAYLOAD[MAIN_PAYLOAD_LEN_DEF][7]={
+{L_SHIFT,0x4,0,0,0,0,0},
 };
 ```

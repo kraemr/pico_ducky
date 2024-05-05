@@ -13,8 +13,9 @@
 #endif
 #include "usb_descriptors.h"
 
-extern uint16_t MAIN_PAYLOAD[];
 extern const int MAIN_PAYLOAD_LEN;
+extern uint8_t MAIN_PAYLOAD[1][7];
+
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 extern const uint8_t REPEAT_DUCKY_SCRIPT;
@@ -35,8 +36,8 @@ uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
 }
 
 
+
 void execute_ducky_payload(){
-    uint8_t keys[6]={0,0,0,0,0,0};
     if(current_line >= MAIN_PAYLOAD_LEN){
         if(REPEAT_DUCKY_SCRIPT == 0){
             return;
@@ -48,11 +49,11 @@ void execute_ducky_payload(){
     uint8_t key_action = NONE;
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
-    uint16_t mp = MAIN_PAYLOAD[current_line];
-    keymod =        exec_keypress(mp,keys);
+    uint8_t* keys = MAIN_PAYLOAD[current_line];
+    keymod = keys[0];
 
     #ifndef TESTING
-        uint8_t pressed = send_hid_keyboard_report(keys,keymod);
+        uint8_t pressed = send_hid_keyboard_report(&keys[1],keymod);
         if(pressed == 0){
             return;
         }

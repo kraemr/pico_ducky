@@ -36,8 +36,8 @@
 #define USB_PID           (0x4000 | _PID_MAP(CDC, 0) | _PID_MAP(MSC, 1) | _PID_MAP(HID, 2) | \
                            _PID_MAP(MIDI, 3) | _PID_MAP(VENDOR, 4) )
 
-#define USB_VID   0xCafe
-#define USB_BCD   0x0200
+#define USB_VID   0xBEEF
+#define USB_BCD   0xCAFE
 
 //--------------------------------------------------------------------+
 // Device Descriptors
@@ -181,8 +181,8 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index)
 char const* string_desc_arr [] =
 {
   (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
-  "CodeadinC",                     // 1: Manufacturer
-  "PiPicoKeypad",              // 2: Product
+  "kraemr",                     // 1: Manufacturer
+  "pico_ducky",              // 2: Product
   "RP2040",                      // 3: Serials, should use chip ID
 };
 
@@ -193,9 +193,7 @@ static uint16_t _desc_str[32];
 uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
 {
   (void) langid;
-
   uint8_t chr_count;
-
   if ( index == 0)
   {
     memcpy(&_desc_str[1], string_desc_arr[0], 2);

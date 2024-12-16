@@ -33,14 +33,13 @@
 #include "tusb_config.h"
 #include "usb_descriptors.h"
 #include "pico/stdlib.h"
-
 void led_blinking_task(void);
 void hid_task(void);
 extern void bruteforce_task();
-extern void execute_ducky_payload();
+extern int32_t execute_ducky_payload();
 extern const uint16_t KEYPRESS_DELAY_MS;
-
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
+uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
 
 void main_loop(void){
   uint32_t now=0;
@@ -49,12 +48,13 @@ void main_loop(void){
   uint8_t res = 0;
   uint8_t t = 0;
   uint8_t k[6]={0x04,0,0,0,0,0};
+  uint8_t report_id = REPORT_ID_KEYBOARD;
   prev = board_millis();
   now = board_millis();
+
   while(!t){
     now = board_millis();
     if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0){
-      //k[0] = 0x4;
       res = send_hid_keyboard_report(k,0);
       prev = board_millis();
       should_reset_keys = 1;
@@ -71,43 +71,60 @@ void main_loop(void){
     tud_task(); // tinyusb device task
   }
 
-now = 0;
-prev = 0;
+  now = 0;
+  prev = 0;
+  int32_t ducky_res = 0;
   while (1)
   {
+
     now = board_millis();
     // i figured out why it fails to print the same character two times 
     //  sending {0x4,0x4,0,0,0} would not press the a key two times instead it presses once and ignores the other one
     // sending {0x4} and directly after {0x4} will fail, the solution is to send {0,0,0,0,0,0} everytime after a key is pressed
     /*https://wiki.osdev.org/USB_Human_Interface_Devices*/
-    if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0){
-      execute_ducky_payload();
+    
+    if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0) {
+      ducky_res = execute_ducky_payload();
       prev = board_millis();
-      should_reset_keys = 1;
+      should_reset_keys = ducky_res == REPORT_ID_KEYBOARD;
     }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1){
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1 ) {
         send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
         prev = board_millis();
         should_reset_keys = 0;
     }
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && ducky_res == REPORT_ID_MOUSE) {
+      send_hid_mouse_report(0, 0, 0);
+      prev = board_millis();
+    }
+/*
+    if(now >= (prev + KEYPRESS_DELAY_MS)){
+      uint8_t res = send_hid_mouse_report(0,0,2);
+      prev = board_millis();
+      board_led_write(true);
+    }
+  */
+    /*
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1){
+      uint8_t res = send_hid_mouse_report(0,0,0);
+      prev = board_millis();
+      board_led_write(false);
+      should_reset_keys = 0;
+    }*/
     tud_task(); // tinyusb device task
   }
 }
 
 /*------------- MAIN -------------*/
-int main(void)
+volatile int main(void)
 {
   board_init();
   tusb_init();
-
-  
   // This makes sure that the "ducky" script only starts when the button is pressed
   while(board_button_read() == 0){
   }
-  
   main_loop();
 }
-
 //--------------------------------------------------------------------+
 // Device callbacks
 //--------------------------------------------------------------------+
@@ -140,8 +157,10 @@ void tud_resume_cb(void)
 }
 
 
-void send_hid_mouse_report(){
-
+uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons) {
+  if ( !tud_hid_ready() ) return 0;
+  tud_hid_mouse_report(REPORT_ID_MOUSE,buttons,deltaX,deltaY,0,0);
+  return 1;
 }
 
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod)
@@ -181,33 +200,7 @@ uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod)
       }
     }
     break;
-
-    case REPORT_ID_GAMEPAD:
-    {
-      // use to avoid send multiple consecutive zero report for keyboard
-      static bool has_gamepad_key = false;
-
-      hid_gamepad_report_t report =
-      {
-        .x   = 0, .y = 0, .z = 0, .rz = 0, .rx = 0, .ry = 0,
-        .hat = 0, .buttons = 0
-      };
-
-      if ( btn )
-      {
-        report.hat = GAMEPAD_HAT_UP;
-        report.buttons = GAMEPAD_BUTTON_A;
-        tud_hid_report(REPORT_ID_GAMEPAD, &report, sizeof(report));
-
-        has_gamepad_key = true;
-      }else
-      {
-        report.hat = GAMEPAD_HAT_CENTERED;
-        report.buttons = 0;
-        if (has_gamepad_key) tud_hid_report(REPORT_ID_GAMEPAD, &report, sizeof(report));
-        has_gamepad_key = false;
-      }
-    }*/
+*/
 }
 
 // Invoked when sent REPORT successfully to host

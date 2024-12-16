@@ -12,18 +12,20 @@
     #include "tinyusb/src/class/hid/hid.h"
 #endif
 #include "usb_descriptors.h"
-
 extern const int MAIN_PAYLOAD_LEN;
-extern uint8_t MAIN_PAYLOAD[1][7];
+extern  uint8_t MAIN_PAYLOAD[2][8];
 
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
+extern uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
 extern const uint8_t REPEAT_DUCKY_SCRIPT;
 static int current_line=0;
+
 #define NONE 0
 #define PRESS_KEY 1
 #define HOLD_KEY 2
 #define RELEASE_KEY 3
+
 
 // returns the keymod
 uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
@@ -37,7 +39,8 @@ uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
 
 
 
-void execute_ducky_payload(){
+// returns current line
+int32_t execute_ducky_payload(){
     if(current_line >= MAIN_PAYLOAD_LEN){
         if(REPEAT_DUCKY_SCRIPT == 0){
             return;
@@ -50,18 +53,30 @@ void execute_ducky_payload(){
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
     uint8_t* keys = MAIN_PAYLOAD[current_line];
-    keymod = keys[0];
+    uint8_t report_type = keys[0];
+    keymod = keys[1];
+
 
     #ifndef TESTING
-        uint8_t pressed = send_hid_keyboard_report(&keys[1],keymod);
+    if(report_type == REPORT_ID_KEYBOARD){
+        uint8_t pressed = send_hid_keyboard_report(&keys[2],keymod);
         if(pressed == 0){
-            return;
+            return -1;
         }
+    }
+
+    else if(report_type == REPORT_ID_MOUSE) {
+        uint8_t pressed = send_hid_mouse_report(keys[3], keys[2], keys[1]);
+        if(pressed == 0){
+            return -1;
+        }
+    }
     #endif
 
     #ifdef TESTING
-        printf("current line: %d, %d %d %d %d %d %d",current_line,keys[0],keys[1],keys[2],keys[3],keys[4],keys[5]);
+        printf("current line: %d %d %d %d %d %d %d %d",current_line,keys[0],keys[1],keys[2],keys[3],keys[4],keys[5],keys[6],keys[7]);
     #endif
 
     current_line++;
+    return report_type;
 }

@@ -41,7 +41,7 @@ extern const uint16_t KEYPRESS_DELAY_MS;
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
 
-void main_loop(void){
+static void main_loop(void){
   uint32_t now=0;
   uint32_t prev=0;
   uint32_t should_reset_keys = 0;
@@ -74,6 +74,7 @@ void main_loop(void){
   now = 0;
   prev = 0;
   int32_t ducky_res = 0;
+  uint16_t reset_key = 0;
   while (1)
   {
 
@@ -86,31 +87,27 @@ void main_loop(void){
     if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0) {
       ducky_res = execute_ducky_payload();
       prev = board_millis();
-      should_reset_keys = ducky_res == REPORT_ID_KEYBOARD;
+      should_reset_keys = (ducky_res == REPORT_ID_KEYBOARD) ^ 
+                          ((ducky_res == REPORT_ID_MOUSE) << 2) ^ 
+                          ((ducky_res == REPORT_ID_CONSUMER_CONTROL) << 3);
+ 
     }
     else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1 ) {
-        send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
-        prev = board_millis();
-        should_reset_keys = 0;
+      send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
+      prev = board_millis();
+      should_reset_keys = 0;
     }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && ducky_res == REPORT_ID_MOUSE) {
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 4) {
       send_hid_mouse_report(0, 0, 0);
       prev = board_millis();
-    }
-/*
-    if(now >= (prev + KEYPRESS_DELAY_MS)){
-      uint8_t res = send_hid_mouse_report(0,0,2);
-      prev = board_millis();
-      board_led_write(true);
-    }
-  */
-    /*
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1){
-      uint8_t res = send_hid_mouse_report(0,0,0);
-      prev = board_millis();
-      board_led_write(false);
       should_reset_keys = 0;
-    }*/
+    }
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 8) {
+      tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &reset_key, 2);
+      prev = board_millis();
+      board_led_write(1);
+      should_reset_keys = 0;
+    }
     tud_task(); // tinyusb device task
   }
 }
@@ -160,6 +157,12 @@ void tud_resume_cb(void)
 uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons) {
   if ( !tud_hid_ready() ) return 0;
   tud_hid_mouse_report(REPORT_ID_MOUSE,buttons,deltaX,deltaY,0,0);
+  return 1;
+}
+
+uint8_t send_hid_consumer_control_report(uint16_t key) {
+  if ( !tud_hid_ready() ) return 0;
+  tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &key, 2);
   return 1;
 }
 

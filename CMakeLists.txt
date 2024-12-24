@@ -1,4 +1,4 @@
-set(PROJECT midiTest)
+set(PROJECT pico_ducky)
 
 cmake_minimum_required(VERSION 3.12)
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
@@ -16,12 +16,12 @@ target_sources(${PROJECT} PUBLIC
 )
 
 # Make sure TinyUSB can find tusb_config.h
-target_include_directories(midiTest PUBLIC
+target_include_directories(pico_ducky PUBLIC
         ${CMAKE_CURRENT_LIST_DIR})
 
 
-target_include_directories(midiTest PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(midiTest PUBLIC pico_stdlib pico_unique_id tinyusb_device tinyusb_board)
-pico_enable_stdio_usb(midiTest 0)
+target_include_directories(pico_ducky PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(pico_ducky PUBLIC pico_stdlib pico_unique_id tinyusb_device tinyusb_board)
+pico_enable_stdio_usb(pico_ducky 0)
 
 pico_add_extra_outputs(${PROJECT})

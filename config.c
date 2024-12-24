@@ -4,15 +4,16 @@
 // if 0 then script will immediately execute.
 // Otherwise the board button has to be pressed
 #include "usb_descriptors.h"
+#include "tusb.h"
 #include <stdint.h>
 const uint8_t BOARD_BUTTON_CONFIRMATION_NEEDED = 1;
 // IMPORTANT PUT THE LINE, COUNT OF YOUR PAYLOAD HERE
-#define MAIN_PAYLOAD_LEN_DEF 2
+#define MAIN_PAYLOAD_LEN_DEF 3
 // if 0 Script runs once, else it repeatedly executes it
 const uint8_t REPEAT_DUCKY_SCRIPT = 0;
 // Set this according to the PC that it will be attached to
-// a sensible default delay would be 100ms
-const uint16_t KEYPRESS_DELAY_MS = 100;
+// a sensible default delay would be 125ms
+const uint16_t KEYPRESS_DELAY_MS = 125;
 //######## CONFIG ##################
 const int MAIN_PAYLOAD_LEN=MAIN_PAYLOAD_LEN_DEF;
 /*
@@ -41,7 +42,8 @@ But the most common layouts should work without issues
 // #define HID_KEY_EUROPE_2 0x64
 const uint8_t MAIN_PAYLOAD[MAIN_PAYLOAD_LEN_DEF][8]={
     {REPORT_ID_KEYBOARD,L_SHIFT,0x4,0,0,0,0,0},
-    {REPORT_ID_MOUSE,2,0,0,0,0,0,0}
+    {REPORT_ID_MOUSE,MOUSE_RIGHT,0,0,0,0,0,0},
+    {REPORT_ID_CONSUMER_CONTROL,HID_USAGE_CONSUMER_VOLUME_DECREMENT,0,0,0,0,0,0},
 };
 
 

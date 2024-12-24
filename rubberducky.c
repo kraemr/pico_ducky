@@ -13,11 +13,12 @@
 #endif
 #include "usb_descriptors.h"
 extern const int MAIN_PAYLOAD_LEN;
-extern  uint8_t MAIN_PAYLOAD[2][8];
+extern  uint8_t MAIN_PAYLOAD[3][8];
 
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 extern uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
+extern uint8_t send_hid_consumer_control_report(uint16_t key);
 extern const uint8_t REPEAT_DUCKY_SCRIPT;
 static int current_line=0;
 
@@ -43,10 +44,10 @@ uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
 int32_t execute_ducky_payload(){
     if(current_line >= MAIN_PAYLOAD_LEN){
         if(REPEAT_DUCKY_SCRIPT == 0){
-            return;
+            return -1;
         }else{
             current_line = 0;
-            return;
+            return -1;
         }
     }
     uint8_t key_action = NONE;
@@ -71,7 +72,18 @@ int32_t execute_ducky_payload(){
             return -1;
         }
     }
+    
+    else if(report_type == REPORT_ID_CONSUMER_CONTROL){
+        uint8_t pressed = send_hid_consumer_control_report(keys[1]);
+        if(pressed == 0){
+            return -1;
+        }
+    }
+
     #endif
+
+
+    
 
     #ifdef TESTING
         printf("current line: %d %d %d %d %d %d %d %d",current_line,keys[0],keys[1],keys[2],keys[3],keys[4],keys[5],keys[6],keys[7]);

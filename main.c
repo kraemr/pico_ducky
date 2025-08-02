@@ -75,6 +75,7 @@ static void main_loop(void){
   prev = 0;
   int32_t ducky_res = 0;
   uint16_t reset_key = 0;
+  board_led_write(1);
   while (1)
   {
 
@@ -89,8 +90,8 @@ static void main_loop(void){
       prev = board_millis();
       should_reset_keys = (ducky_res == REPORT_ID_KEYBOARD) ^ 
                           ((ducky_res == REPORT_ID_MOUSE) << 2) ^ 
-                          ((ducky_res == REPORT_ID_CONSUMER_CONTROL) << 3);
- 
+                          ((ducky_res == REPORT_ID_CONSUMER_CONTROL) << 3) ^
+                          ((ducky_res == REPORT_ID_GAMEPAD) << 4);
     }
     else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1 ) {
       send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
@@ -105,9 +106,13 @@ static void main_loop(void){
     else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 8) {
       tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &reset_key, 2);
       prev = board_millis();
-      board_led_write(1);
       should_reset_keys = 0;
     }
+    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 8) {
+      
+      prev = board_millis();
+      should_reset_keys = 0;
+    }    
     tud_task(); // tinyusb device task
   }
 }

@@ -1,20 +1,26 @@
 // In this file you configure your Payload
 // In Main Payload you write each line of your exploit
 //########## CONFIG ##############
+#include "usb_descriptors.h"
+#include "layouts/us_keyboard_layout.h"
+#include "tinyusb/src/tusb.h"
+#include <stdint.h>
+
 // if 0 then script will immediately execute.
 // Otherwise the board button has to be pressed
-#include "usb_descriptors.h"
-#include "tusb.h"
-#include <stdint.h>
 const uint8_t BOARD_BUTTON_CONFIRMATION_NEEDED = 1;
-// IMPORTANT PUT THE LINE, COUNT OF YOUR PAYLOAD HERE
-#define MAIN_PAYLOAD_LEN_DEF 3
+
 // if 0 Script runs once, else it repeatedly executes it
 const uint8_t REPEAT_DUCKY_SCRIPT = 0;
+
 // Set this according to the PC that it will be attached to
 // a sensible default delay would be 125ms
 const uint16_t KEYPRESS_DELAY_MS = 125;
+
 //######## CONFIG ##################
+
+// IMPORTANT PUT THE LINE, COUNT OF YOUR PAYLOAD HERE
+#define MAIN_PAYLOAD_LEN_DEF 2
 const int MAIN_PAYLOAD_LEN=MAIN_PAYLOAD_LEN_DEF;
 /*
 The HID_KEYs as they are defined in tinyusb are for the US Layout
@@ -38,12 +44,11 @@ But the most common layouts should work without issues
 #define MOUSE_RIGHT 2
 #define MOUSE_MDIILE 3
 
-// Special Key < on German Keyboards and other european ones for should be:
+// Special Key < on German Keyboards and other european ones for üshould be:
 // #define HID_KEY_EUROPE_2 0x64
 const uint8_t MAIN_PAYLOAD[MAIN_PAYLOAD_LEN_DEF][8]={
-    {REPORT_ID_KEYBOARD,L_SHIFT,0x4,0,0,0,0,0},
-    {REPORT_ID_MOUSE,MOUSE_RIGHT,0,0,0,0,0,0},
-    {REPORT_ID_CONSUMER_CONTROL,HID_USAGE_CONSUMER_VOLUME_DECREMENT,0,0,0,0,0,0},
+    {REPORT_ID_KEYBOARD,0x00,DUCK_KEY_0,0,0,0,0,0},
+    {REPORT_ID_KEYBOARD,0x00,DUCK_KEY_1,0,0,0,0,0},
 };
 
 

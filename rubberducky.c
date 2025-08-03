@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#define PARSE
+
 // If testing is defined, then keypresses are not actually sent
 // then the code can be "tested" on pc instead of the pico
 #ifndef TESTING
@@ -11,9 +11,10 @@
     #include "tusb_config.h"
     #include "tinyusb/src/class/hid/hid.h"
 #endif
+
 #include "usb_descriptors.h"
 extern const int MAIN_PAYLOAD_LEN;
-extern  uint8_t MAIN_PAYLOAD[3][8];
+extern  uint8_t MAIN_PAYLOAD[][8];
 
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);

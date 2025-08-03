@@ -1,6 +1,6 @@
 # pico_ducky
 
-This project uses pico-sdk and tinyusb as submodules to act as a badusb device.
+This project uses pico-sdk and tinyusb as submodules to make a pi pico or pi pico 2 act as a badusb device.
 Be sure to use the following to clone:
 
 ```

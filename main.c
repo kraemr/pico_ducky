@@ -22,17 +22,16 @@
  * THE SOFTWARE.
  *
  */
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "bsp/board.h"
 #include "tusb.h"
 #include "tusb_config.h"
 #include "usb_descriptors.h"
 #include "pico/stdlib.h"
+
 void led_blinking_task(void);
 void hid_task(void);
 extern void bruteforce_task();

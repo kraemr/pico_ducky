@@ -9,7 +9,7 @@
     #include "bsp/board.h"
     #include "tusb.h"
     #include "tusb_config.h"
-    #include "tinyusb/src/class/hid/hid.h"
+    #include "pico-sdk/lib/tinyusb/src/class/hid/hid.h"
 #endif
 
 #include "usb_descriptors.h"
@@ -17,7 +17,7 @@ extern const int MAIN_PAYLOAD_LEN;
 extern  uint8_t MAIN_PAYLOAD[][8];
 
 extern uint32_t keypress_delay_ms;
-extern uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
+extern uint8_t send_hid_keyboard_report(volatile uint8_t keycode[6],uint8_t key_mod);
 extern uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
 extern uint8_t send_hid_consumer_control_report(uint16_t key);
 extern const uint8_t REPEAT_DUCKY_SCRIPT;
@@ -38,11 +38,9 @@ uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
     keys[0] = actual_key;
     return keymod;
 }
-
-
-
+#include "parser.h"
 // returns current line
-int32_t execute_ducky_payload(){
+int32_t execute_ducky_payload(volatile UsbCommand* cmd){
     if(current_line >= MAIN_PAYLOAD_LEN){
         if(REPEAT_DUCKY_SCRIPT == 0){
             return -1;
@@ -51,31 +49,30 @@ int32_t execute_ducky_payload(){
             return -1;
         }
     }
+
     uint8_t key_action = NONE;
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
-    uint8_t* keys = MAIN_PAYLOAD[current_line];
-    uint8_t report_type = keys[0];
-    keymod = keys[1];
-
+    uint8_t report_type = cmd->value[0];
+    keymod = cmd->value[1];
 
     #ifndef TESTING
     if(report_type == REPORT_ID_KEYBOARD){
-        uint8_t pressed = send_hid_keyboard_report(&keys[2],keymod);
+        uint8_t pressed = send_hid_keyboard_report(&cmd->value[2],keymod);
         if(pressed == 0){
             return -1;
         }
     }
 
     else if(report_type == REPORT_ID_MOUSE) {
-        uint8_t pressed = send_hid_mouse_report(keys[3], keys[2], keys[1]);
+        uint8_t pressed = send_hid_mouse_report(cmd->value[3], cmd->value[2], cmd->value[1]);
         if(pressed == 0){
             return -1;
         }
     }
     
     else if(report_type == REPORT_ID_CONSUMER_CONTROL){
-        uint8_t pressed = send_hid_consumer_control_report(keys[1]);
+        uint8_t pressed = send_hid_consumer_control_report(cmd->value[1]);
         if(pressed == 0){
             return -1;
         }
@@ -87,7 +84,7 @@ int32_t execute_ducky_payload(){
     
 
     #ifdef TESTING
-        printf("current line: %d %d %d %d %d %d %d %d",current_line,keys[0],keys[1],keys[2],keys[3],keys[4],keys[5],keys[6],keys[7]);
+        printf("current line: %d %d %d %d %d %d %d %d",current_line,cmd->value[0],cmd->value[1],cmd->value[2],cmd->value[3],cmd->value[4],cmd->value[5],cmd->value[6],cmd->value[7]);
     #endif
 
     current_line++;

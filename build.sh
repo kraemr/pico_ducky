@@ -8,4 +8,4 @@ export PICO_SDK_PATH=$(pwd)
 cd ..
 cd build
 cmake ..
-make
+make -j16

@@ -41,22 +41,13 @@ uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
 #include "parser.h"
 // returns current line
 int32_t execute_ducky_payload(volatile UsbCommand* cmd){
-    if(current_line >= MAIN_PAYLOAD_LEN){
-        if(REPEAT_DUCKY_SCRIPT == 0){
-            return -1;
-        }else{
-            current_line = 0;
-            return -1;
-        }
-    }
-
     uint8_t key_action = NONE;
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
+
     uint8_t report_type = cmd->value[0];
     keymod = cmd->value[1];
 
-    #ifndef TESTING
     if(report_type == REPORT_ID_KEYBOARD){
         uint8_t pressed = send_hid_keyboard_report(&cmd->value[2],keymod);
         if(pressed == 0){
@@ -77,16 +68,7 @@ int32_t execute_ducky_payload(volatile UsbCommand* cmd){
             return -1;
         }
     }
-
-    #endif
-
-
     
-
-    #ifdef TESTING
-        printf("current line: %d %d %d %d %d %d %d %d",current_line,cmd->value[0],cmd->value[1],cmd->value[2],cmd->value[3],cmd->value[4],cmd->value[5],cmd->value[6],cmd->value[7]);
-    #endif
-
     current_line++;
     return report_type;
 }

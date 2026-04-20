@@ -5,6 +5,7 @@
 #include "pico/stdlib.h"
 #include "sd_card.h"
 #include "ff.h"
+#include <stdint.h>
 #include <stdio.h>
 #include "rtc.h"
 #include "hardware/spi.h"
@@ -23,4 +24,10 @@ int openFile(const char* name, unsigned int len, FatFsState* state);
 int unmountFs(const char* volume, FatFsState* state);
 int closeFile(FatFsState* state);
 int read_script(void* out, unsigned int* out_len, FatFsState* state);
+
+#include "parser.h"
+// This is a DECLARATION (No RAM is used)
+extern volatile UsbCommand cmds[128];
+extern volatile uint32_t cmds_len;
+
 #endif

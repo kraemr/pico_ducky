@@ -30,4 +30,4 @@ typedef struct {
 } KeyPair;
 
 
-extern int parse_line(const char* input,unsigned short input_len,UsbCommand* cmd);
+extern int parse_line(const char* input,unsigned short input_len,volatile UsbCommand* cmd);

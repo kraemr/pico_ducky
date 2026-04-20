@@ -22,114 +22,158 @@
  * THE SOFTWARE.
  *
  */
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include "bsp/board.h"
 #include "tusb.h"
 #include "tusb_config.h"
 #include "usb_descriptors.h"
 #include "pico/stdlib.h"
+#include "spi-fatfs.h"
 
 void led_blinking_task(void);
 void hid_task(void);
 extern void bruteforce_task();
-extern int32_t execute_ducky_payload();
+extern int32_t execute_ducky_payload(volatile UsbCommand* cmd);
 extern const uint16_t KEYPRESS_DELAY_MS;
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
+extern int get_commands(void);
 
-static void main_loop(void){
-  uint32_t now=0;
-  uint32_t prev=0;
-  uint32_t should_reset_keys = 0;
-  uint8_t res = 0;
-  uint8_t t = 0;
-  uint8_t k[6]={0x04,0,0,0,0,0};
-  uint8_t report_id = REPORT_ID_KEYBOARD;
-  prev = board_millis();
-  now = board_millis();
+extern void put_rgb(uint8_t red, uint8_t green, uint8_t blue);
+extern void init_rgb();
 
-  while(!t){
-    now = board_millis();
-    if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0){
-      res = send_hid_keyboard_report(k,0);
-      prev = board_millis();
-      should_reset_keys = 1;
-    }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1){
-      k[0] = 0x0;
-      send_hid_keyboard_report(k,0);
-      prev = board_millis();
-      if(res){
-        t = 1;
-      }
-      should_reset_keys = 0;
-    }    
-    tud_task(); // tinyusb device task
-  }
-
-  now = 0;
-  prev = 0;
-  int32_t ducky_res = 0;
-  uint16_t reset_key = 0;
-  board_led_write(1);
-  while (1)
-  {
-
-    now = board_millis();
-    // i figured out why it fails to print the same character two times 
-    //  sending {0x4,0x4,0,0,0} would not press the a key two times instead it presses once and ignores the other one
+int32_t run_cmds(uint32_t prev, uint32_t now, int32_t i) {
+    int32_t ducky_res = 0;  
+    uint32_t should_reset_keys = 0;
+    uint16_t reset_key = 0;
+    uint32_t can_send_report = now >= (prev + KEYPRESS_DELAY_MS);
     // sending {0x4} and directly after {0x4} will fail, the solution is to send {0,0,0,0,0,0} everytime after a key is pressed
-    /*https://wiki.osdev.org/USB_Human_Interface_Devices*/
-    
-    if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 0) {
-      ducky_res = execute_ducky_payload();
+    /* 
+      https://wiki.osdev.org/USB_Human_Interface_Devices
+    */
+    if(can_send_report && should_reset_keys == 0) {
+      if(i < cmds_len) {
+        ducky_res = execute_ducky_payload(&cmds[i]);
+        i++;
+      }
       prev = board_millis();
       should_reset_keys = (ducky_res == REPORT_ID_KEYBOARD) ^ 
                           ((ducky_res == REPORT_ID_MOUSE) << 2) ^ 
                           ((ducky_res == REPORT_ID_CONSUMER_CONTROL) << 3) ^
                           ((ducky_res == REPORT_ID_GAMEPAD) << 4);
     }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 1 ) {
+    else if(can_send_report&& should_reset_keys == 1 ) {
       send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
       prev = board_millis();
       should_reset_keys = 0;
     }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 4) {
+ /*   else if(can_send_report && should_reset_keys == 4) {
       send_hid_mouse_report(0, 0, 0);
       prev = board_millis();
       should_reset_keys = 0;
     }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 8) {
+    else if(can_send_report && should_reset_keys == 8) {
       tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &reset_key, 2);
       prev = board_millis();
       should_reset_keys = 0;
+    }*/
+    return i;
+}
+
+static void main_loop() {
+    size_t i = 0;  
+    uint32_t prev = board_millis();
+    uint32_t needs_release = 0;
+
+    uint32_t boot_wait = board_millis();
+    while (board_millis() - boot_wait < 3000) {
+        tud_task(); // MUST keep calling this or the PC will disconnect
     }
-    else if(now >= (prev + KEYPRESS_DELAY_MS) && should_reset_keys == 8) {
+
+    while (i < cmds_len) {
+        tud_task(); // MUST be called constantly
+        
+        // Wait until TinyUSB is ready to actually send data
+        if (!tud_hid_ready()) continue;
+
+        uint32_t now = board_millis();
+
+        // 1. Check if the delay between actions has passed
+        if (now - prev >= KEYPRESS_DELAY_MS) {
+            
+            if (!needs_release) {
+                // ACTION PHASE: Send the key/mouse command
+                int32_t report_id = execute_ducky_payload(&cmds[i]);
+                
+                if (report_id > 0) {
+                    needs_release = 1; // We sent something, now we must clear it
+                } else {
+                    i++; // It was a delay or meta command, move to next
+                }
+                prev = now; // Reset timer for the "Hold" duration
+            } 
+            else {
+                // RELEASE PHASE: Send the "All Keys Up" report
+                // You need to clear the specific report type that was sent
+                uint8_t empty[6] = {0};
+                send_hid_keyboard_report(empty, 0);
+                // If you use mouse/consumer, you should send empty reports for those too
+                
+                needs_release = 0;
+                i++;        // Command fully completed (Press + Release), move to next
+                prev = now; // Reset timer for the "Between Keys" duration
+            }
+        }
+    }
+    
+    // Optional: Turn LED Blue or Green when totally finished
+    put_rgb(0, 0, 255); 
+    while(1) { tud_task(); } 
+}
+
+int main(void) {
+    board_init();      
+    init_rgb();
+    int32_t res = 0;
+
+    while(res != 1){
+      res = get_commands();
+      if( res == -1 ) {
+        put_rgb(255,0,0);
       
-      prev = board_millis();
-      should_reset_keys = 0;
-    }    
-    tud_task(); // tinyusb device task
-  }
-}
+      }else if(res == -2){
+        put_rgb(255, 255, 0);
+      
+      }else if(res == -3) {
+        put_rgb(0, 255, 255);
+      
+      }else if(res == -4) {
+        //put_rgb(255, 255, 255);
+      }
+      if (cmds_len != 0) {
+        int i = 0;
+        while(i != cmds_len) {
+          put_rgb(255,255, 255);
+          sleep_ms(500);
+          put_rgb(0,0, 0);
+          sleep_ms(500);
+          i++;
+        }
+        
+      } 
 
-/*------------- MAIN -------------*/
-volatile int main(void)
-{
-  board_init();
-  tusb_init();
-  // This makes sure that the "ducky" script only starts when the button is pressed
-  while(board_button_read() == 0){
-  }
-  main_loop();
+    }
+    // Step 2: Now that SD is closed and pins are idle, start USB
+    tusb_init();
+    // Step 3: Run the HID task
+    main_loop();
+    return 0;
 }
-//--------------------------------------------------------------------+
-// Device callbacks
-//--------------------------------------------------------------------+
-
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {

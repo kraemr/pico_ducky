@@ -169,7 +169,7 @@ const int MAX_LEN = 1024;
 */
 
 
-void fill_usb_command(UsbCommand* cmd) {
+void fill_usb_command(volatile UsbCommand* cmd) {
 	// 0:1 means ReportIDKeyboard
 	cmd->value[0] = 1;
 	// 1 Contains OR ed keymodifiers
@@ -202,13 +202,12 @@ int nmemcompare(void* b1,void* b2, unsigned int n) {
 }
 
 
-int parse_line(const char* input,unsigned short input_len,UsbCommand* cmd) {
+int parse_line(const char* input,unsigned short input_len,volatile UsbCommand* cmd) {
 	fill_usb_command(cmd);
 	int i = 0;
 	int kbyte = 2; // index 2 is start of the keys, 0 is REPORT_ID (1 bein kb)
 	PARSING_STATE state = START;
-	char buf[1024] = {0};
-
+	char buf[16384] = {0};
 	while (i < MAX_LEN) {
 		if (state == START) {
 			// When we are in start we wait until we get a space, indicating the cmd is done
@@ -236,7 +235,6 @@ int parse_line(const char* input,unsigned short input_len,UsbCommand* cmd) {
 			if(nmemcompare(buf,PRESS_CMD,5)) {
 				cmd->command = PRESS;
 				state = FOUND_COMMAND;
-			//	printf("PRESS CMD FOUND \n");
 			}
 
 		}
@@ -246,7 +244,6 @@ int parse_line(const char* input,unsigned short input_len,UsbCommand* cmd) {
 				buf[i] = input[i];
 				if(input[i] == ';') {
 					// Found End !!
-			//		printf("found end");
 					state = FOUND_END;
 					return i+1;
 				}
@@ -262,7 +259,7 @@ int parse_line(const char* input,unsigned short input_len,UsbCommand* cmd) {
 			if(kbyte >= 8){
 				return -2; // Too many Commands
 			}
-
+			
 			cmd->value[kbyte] = get_duck_key(&buf[index], i - index-1);
 			kbyte+=1;
 

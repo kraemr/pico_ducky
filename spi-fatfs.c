@@ -1,4 +1,6 @@
 #include "spi-fatfs.h"
+#include "spi-fatfs-hwconfig.h"
+#include <stdint.h>
 
 int initFs(const char* volume, FatFsState* state){
     if(!sd_init_driver()){
@@ -27,6 +29,7 @@ int unmountFs(const char* volume,FatFsState* state){
     state->fr = f_unmount(volume);
     if (state->fr != FR_OK) {
         printf("Could not unmount fs (%d)\r\n",state->fr);
+        return 0;
     }
     return 1;
 }
@@ -37,6 +40,7 @@ int closeFile(FatFsState* state){
         printf("Could not Close file \r\n");
         return 0;
     }
+    return 1;
 }
 
 
@@ -55,60 +59,81 @@ int read_script(void* out, unsigned int* out_len, FatFsState* state)
     state->fr = f_read(&state->fil,out,1024,out_len);
 }
 
-/*
-This worked 
-  FILE * fp = fopen("script.txt","rb");
-  char buffer[1024] = {'\0'};
-  size_t bytes_read = 0; 
-  while ((bret_fread(buffer,1,1024,fp,&bytes_read))){
-    int offset = parse_line(buffer, bytes_read,&command) +1;
-    if (offset <= 0) {
-      return 1;
-    } 
-    //printf("Offset %d\n",offset);
-    //printf("After Reading: %ld\n",ftell(fp));
-    fseek(fp,offset,SEEK_SET);
-    //printf("After Reading and setting offset: %ld\n",ftell(fp));
-    //printf("%s\n",buffer);
-    memset(buffer, 0, 1024);
-    printf("%u %u %u %u %u %u %u %u\n",command.value[0],command.value[1],command.value[2],command.value[3],command.value[4],command.value[5],command.value[6],command.value[7]);
-  } 
-*/
-#include "parser.h"
-volatile int main(void) {
-    stdio_init_all(); 
-    sleep_ms(4000);
-    
-    char name[256] = "script.txt";
-    char out[16384] = {0};
-    unsigned int len = 0;
-    FatFsState state;
-    UsbCommand command;
-    size_t bytes_read = 0; 
-    
+FatFsState state;
+const char name[10] = "script.txt";
+char buf[512]={0};
+volatile UsbCommand cmds[128];
+volatile uint32_t cmds_len = 0;
+
+int get_commands() {
+    //unmountFs("0:",&state);
+    // Explicitly reset the internal driver state flags
     int ret = initFs("0:",&state);
-    ret = openFile(name, 10, &state);
-    int offset = 0;
-
-    while(1){
-        ret = read_script(out,&len,&state);
-        if(ret != 0) {
-            printf("Read scirpt failed: %d\n",ret);
-        }
-        ret = parse_line(out,len,&command);
-        printf("%u %u %u %u %u %u %u %u\n",command.value[0],command.value[1],command.value[2],command.value[3],command.value[4],command.value[5],command.value[6],command.value[7]);
-        if (ret <= 0) {
-            return 1;
-        } 
-        offset += ret;
-        f_lseek(&state.fil, offset+1);
-        memset(out, 0, 1024);
+    if (ret == 0) {
+        return -1;
     }
-    
-
-    closeFile(&state);
+    ret = openFile(name, 10, &state);
+    if(ret == 0) {
+        return -2;
+    }
+    uint32_t i = 0;
+    while(1){
+        memset(buf,0,512);
+        char* s = f_gets(buf,512,&state.fil);
+        if(s == NULL) 
+        {
+            break;
+        }
+        int l = strlen(s);
+        ret = parse_line(buf,l,&cmds[i]);
+        if(ret <= 0){
+            break;
+        }
+        printf("%u %u %u %u %u %u\n",cmds[i].value[0],cmds[i].value[1],cmds[i].value[2],cmds[i].value[3],cmds[i].value[4],cmds[i].value[5]);
+        i++;
+    }
+    cmds_len = i;
+    printf("got cmds: %ld\n",cmds_len);
+    ret = 0;
+    ret = closeFile(&state);
+    printf("closeFile retuns: %d\n",ret);
+    if(ret == 0) {
+        return -3;
+    }
     ret = unmountFs("0:", &state);
-    
-    out[len] = '\0';
-   // printf("\nResult:%s\n",out); 
+    printf("unmountFs retuns: %d\n",ret);
+    if(ret == 0) {
+        return -4;
+    }
+    printf("ret: %d\n",ret);
+    return ret;
 }
+
+/*
+extern void put_rgb(uint8_t red, uint8_t green, uint8_t blue);
+extern void init_rgb();
+
+int main(){
+    stdio_init_all();
+    sleep_ms(4000);
+
+    int res = get_commands();
+    printf("res returned from get_commands %d\n",res);
+    init_rgb();
+
+    if( res == -1 ) {
+      put_rgb(255,0,0);
+    }
+    else if(res == -2){
+      put_rgb(255, 255, 0);
+    }
+    else if(res == -3) {
+      put_rgb(0, 255, 255);
+    }
+    else if(res == -4) {
+      put_rgb(0, 0, 255);
+    }
+    else {
+      put_rgb(255, 0,0);
+    }
+}*/

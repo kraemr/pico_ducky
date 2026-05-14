@@ -18,5 +18,4 @@ void init_rgb(){
     uint offset = pio_add_program(pio, &ws2812_program);
     uint8_t cnt = 0;
     ws2812_program_init(pio, sm, offset, 22, 800000, true);
-    
 }

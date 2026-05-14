@@ -38,8 +38,10 @@
 void led_blinking_task(void);
 void hid_task(void);
 extern void bruteforce_task();
-extern int32_t execute_ducky_payload(volatile UsbCommand* cmd);
-extern const uint16_t KEYPRESS_DELAY_MS;
+extern void execute_ducky_payload(UsbCommand* cmd);
+
+#define KEYPRESS_DELAY_MS 50
+
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
 uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons);
 extern int get_commands(void);
@@ -47,32 +49,18 @@ extern int get_commands(void);
 extern void put_rgb(uint8_t red, uint8_t green, uint8_t blue);
 extern void init_rgb();
 
-int32_t run_cmds(uint32_t prev, uint32_t now, int32_t i) {
-    int32_t ducky_res = 0;  
+int32_t run_cmds(uint32_t* prev, uint32_t now, int32_t i) {
     uint32_t should_reset_keys = 0;
     uint16_t reset_key = 0;
-    uint32_t can_send_report = now >= (prev + KEYPRESS_DELAY_MS);
-    // sending {0x4} and directly after {0x4} will fail, the solution is to send {0,0,0,0,0,0} everytime after a key is pressed
-    /* 
-      https://wiki.osdev.org/USB_Human_Interface_Devices
-    */
-    if(can_send_report && should_reset_keys == 0) {
-      if(i < cmds_len) {
-        ducky_res = execute_ducky_payload(&cmds[i]);
-        i++;
-      }
-      prev = board_millis();
-      should_reset_keys = (ducky_res == REPORT_ID_KEYBOARD) ^ 
-                          ((ducky_res == REPORT_ID_MOUSE) << 2) ^ 
-                          ((ducky_res == REPORT_ID_CONSUMER_CONTROL) << 3) ^
-                          ((ducky_res == REPORT_ID_GAMEPAD) << 4);
+    uint32_t can_send_report = now >= ((*prev) + KEYPRESS_DELAY_MS);
+    if(i < cmds_len && can_send_report) {
+      execute_ducky_payload(&cmds[i]);
+      i++;      
+    }else{
+      return i;
     }
-    else if(can_send_report&& should_reset_keys == 1 ) {
-      send_hid_keyboard_report((uint8_t[]){0,0,0,0,0,0},0);
-      prev = board_millis();
-      should_reset_keys = 0;
-    }
- /*   else if(can_send_report && should_reset_keys == 4) {
+    (*prev) = board_millis();
+    /*   else if(can_send_report && should_reset_keys == 4) {
       send_hid_mouse_report(0, 0, 0);
       prev = board_millis();
       should_reset_keys = 0;
@@ -91,49 +79,15 @@ static void main_loop() {
     uint32_t needs_release = 0;
 
     uint32_t boot_wait = board_millis();
-    while (board_millis() - boot_wait < 3000) {
+    while (board_millis() - boot_wait < 2000) {
         tud_task(); // MUST keep calling this or the PC will disconnect
-    }
-
-    while (i < cmds_len) {
-        tud_task(); // MUST be called constantly
-        
-        // Wait until TinyUSB is ready to actually send data
-        if (!tud_hid_ready()) continue;
-
-        uint32_t now = board_millis();
-
-        // 1. Check if the delay between actions has passed
-        if (now - prev >= KEYPRESS_DELAY_MS) {
-            
-            if (!needs_release) {
-                // ACTION PHASE: Send the key/mouse command
-                int32_t report_id = execute_ducky_payload(&cmds[i]);
-                
-                if (report_id > 0) {
-                    needs_release = 1; // We sent something, now we must clear it
-                } else {
-                    i++; // It was a delay or meta command, move to next
-                }
-                prev = now; // Reset timer for the "Hold" duration
-            } 
-            else {
-                // RELEASE PHASE: Send the "All Keys Up" report
-                // You need to clear the specific report type that was sent
-                uint8_t empty[6] = {0};
-                send_hid_keyboard_report(empty, 0);
-                // If you use mouse/consumer, you should send empty reports for those too
-                
-                needs_release = 0;
-                i++;        // Command fully completed (Press + Release), move to next
-                prev = now; // Reset timer for the "Between Keys" duration
-            }
-        }
-    }
-    
-    // Optional: Turn LED Blue or Green when totally finished
+    }          
     put_rgb(0, 0, 255); 
-    while(1) { tud_task(); } 
+    while(1) { 
+      uint32_t now = board_millis();
+      i = run_cmds(&prev, now, i);      
+      tud_task(); 
+    } 
 }
 
 int main(void) {
@@ -157,13 +111,13 @@ int main(void) {
       }
       if (cmds_len != 0) {
         int i = 0;
-        while(i != cmds_len) {
+        /*while(i != cmds_len) {
           put_rgb(255,255, 255);
           sleep_ms(500);
           put_rgb(0,0, 0);
           sleep_ms(500);
           i++;
-        }
+        }*/
         
       } 
 

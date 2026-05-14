@@ -15,12 +15,12 @@ target_sources(${PROJECT} PUBLIC
  ${CMAKE_CURRENT_LIST_DIR}/main.c
  ${CMAKE_CURRENT_LIST_DIR}/usb_descriptors.c
  ${CMAKE_CURRENT_LIST_DIR}/rubberducky.c
- ${CMAKE_CURRENT_LIST_DIR}/parser.c
- ${CMAKE_CURRENT_LIST_DIR}/config.c
  ${CMAKE_CURRENT_LIST_DIR}/time_dummy.c
  ${CMAKE_CURRENT_LIST_DIR}/spi-fatfs.c
  ${CMAKE_CURRENT_LIST_DIR}/spi-fatfs-hwconfig.c
  ${CMAKE_CURRENT_LIST_DIR}/debug.c
+ ${CMAKE_CURRENT_LIST_DIR}/usb_script/constants.c
+ ${CMAKE_CURRENT_LIST_DIR}/usb_script/parser.c
 )
 
 add_subdirectory(no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI build)

@@ -7,3 +7,6 @@
 [submodule "no-OS-FatFS-SD-SPI-RPi-Pico"]
 	path = no-OS-FatFS-SD-SPI-RPi-Pico
 	url = https://github.com/carlk3/no-OS-FatFS-SD-SPI-RPi-Pico
+[submodule "usb_script"]
+	path = usb_script
+	url = git@github.com:kraemr/usb_script.git

@@ -25,9 +25,8 @@ int unmountFs(const char* volume, FatFsState* state);
 int closeFile(FatFsState* state);
 int read_script(void* out, unsigned int* out_len, FatFsState* state);
 
-#include "parser.h"
-// This is a DECLARATION (No RAM is used)
-extern volatile UsbCommand cmds[128];
-extern volatile uint32_t cmds_len;
+#include "usb_script/parser.h"
+extern UsbCommand cmds[128];
+extern uint32_t cmds_len;
 
 #endif

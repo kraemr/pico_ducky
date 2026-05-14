@@ -1,7 +1,5 @@
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "usb_descriptors.h"
 
 // If testing is defined, then keypresses are not actually sent
 // then the code can be "tested" on pc instead of the pico
@@ -11,10 +9,6 @@
     #include "tusb_config.h"
     #include "pico-sdk/lib/tinyusb/src/class/hid/hid.h"
 #endif
-
-#include "usb_descriptors.h"
-extern const int MAIN_PAYLOAD_LEN;
-extern  uint8_t MAIN_PAYLOAD[][8];
 
 extern uint32_t keypress_delay_ms;
 extern uint8_t send_hid_keyboard_report(volatile uint8_t keycode[6],uint8_t key_mod);
@@ -38,37 +32,19 @@ uint8_t exec_keypress(uint16_t key,uint8_t keys[6]){
     keys[0] = actual_key;
     return keymod;
 }
-#include "parser.h"
-// returns current line
-int32_t execute_ducky_payload(volatile UsbCommand* cmd){
+
+#include "usb_script/parser.h"
+
+void execute_ducky_payload(UsbCommand* cmd){
     uint8_t key_action = NONE;
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
-
     uint8_t report_type = cmd->value[0];
     keymod = cmd->value[1];
 
     if(report_type == REPORT_ID_KEYBOARD){
         uint8_t pressed = send_hid_keyboard_report(&cmd->value[2],keymod);
-        if(pressed == 0){
-            return -1;
-        }
     }
 
-    else if(report_type == REPORT_ID_MOUSE) {
-        uint8_t pressed = send_hid_mouse_report(cmd->value[3], cmd->value[2], cmd->value[1]);
-        if(pressed == 0){
-            return -1;
-        }
-    }
-    
-    else if(report_type == REPORT_ID_CONSUMER_CONTROL){
-        uint8_t pressed = send_hid_consumer_control_report(cmd->value[1]);
-        if(pressed == 0){
-            return -1;
-        }
-    }
-    
     current_line++;
-    return report_type;
 }

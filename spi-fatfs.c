@@ -1,5 +1,6 @@
 #include "spi-fatfs.h"
 #include "spi-fatfs-hwconfig.h"
+#include "usb_script/parser.h"
 #include <stdint.h>
 
 int initFs(const char* volume, FatFsState* state){
@@ -61,11 +62,14 @@ int read_script(void* out, unsigned int* out_len, FatFsState* state)
 
 FatFsState state;
 const char name[10] = "script.txt";
-char buf[512]={0};
-volatile UsbCommand cmds[128];
-volatile uint32_t cmds_len = 0;
+// For now there is a limit 4KB
+char buf[4096]={0};
+// For now limited to 128 Commands
+UsbCommand cmds[128];
+uint32_t cmds_len = 0;
 
 int get_commands() {
+    KeysContext ktx={0};
     //unmountFs("0:",&state);
     // Explicitly reset the internal driver state flags
     int ret = initFs("0:",&state);
@@ -76,24 +80,31 @@ int get_commands() {
     if(ret == 0) {
         return -2;
     }
-    uint32_t i = 0;
+
     while(1){
-        memset(buf,0,512);
-        char* s = f_gets(buf,512,&state.fil);
+        memset(buf,0,4096);
+        char* s = f_gets(buf,4096,&state.fil);
         if(s == NULL) 
         {
             break;
         }
         int l = strlen(s);
-        ret = parse_line(buf,l,&cmds[i]);
-        if(ret <= 0){
-            break;
+        size_t position_in_buffer = 0;
+        while(position_in_buffer < l) {
+            ret = parse_line(buf,l,&ktx,&cmds[cmds_len],&position_in_buffer,ret);
+            if(ret == DONE_PRESS) {        
+                cmds_len++;
+                ret = parse_line(buf,l,&ktx,&cmds[cmds_len],&position_in_buffer, ret);
+            }
+
+            if(ret != DONE){
+                break;
+            }else{
+                cmds_len++;
+            }
         }
-        printf("%u %u %u %u %u %u\n",cmds[i].value[0],cmds[i].value[1],cmds[i].value[2],cmds[i].value[3],cmds[i].value[4],cmds[i].value[5]);
-        i++;
     }
-    cmds_len = i;
-    printf("got cmds: %ld\n",cmds_len);
+    printf("got cmds: %u\n",cmds_len);
     ret = 0;
     ret = closeFile(&state);
     printf("closeFile retuns: %d\n",ret);
@@ -108,32 +119,3 @@ int get_commands() {
     printf("ret: %d\n",ret);
     return ret;
 }
-
-/*
-extern void put_rgb(uint8_t red, uint8_t green, uint8_t blue);
-extern void init_rgb();
-
-int main(){
-    stdio_init_all();
-    sleep_ms(4000);
-
-    int res = get_commands();
-    printf("res returned from get_commands %d\n",res);
-    init_rgb();
-
-    if( res == -1 ) {
-      put_rgb(255,0,0);
-    }
-    else if(res == -2){
-      put_rgb(255, 255, 0);
-    }
-    else if(res == -3) {
-      put_rgb(0, 255, 255);
-    }
-    else if(res == -4) {
-      put_rgb(0, 0, 255);
-    }
-    else {
-      put_rgb(255, 0,0);
-    }
-}*/

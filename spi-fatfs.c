@@ -53,7 +53,6 @@ int closeFile(FatFsState* state){
         UINT btr,     [IN] Number of bytes to read 
         UINT* br      [OUT] Number of bytes read 
     );
-
 */
 int read_script(void* out, unsigned int* out_len, FatFsState* state)
 {

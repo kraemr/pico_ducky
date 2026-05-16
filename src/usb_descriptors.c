@@ -1,5 +1,5 @@
 #include "tusb.h"
-#include "usb_descriptors.h"
+#include "../inc/usb_descriptors.h"
 
 #define USB_VID   0xBEEF
 #define USB_PID   0x4002 // Unique PID for HID + MSC
@@ -98,10 +98,10 @@ char const* string_desc_arr [] =
 {
   (const char[]) { 0x09, 0x04 }, // 0: English
   "kraemr",                      // 1: Manufacturer
-  "pico_ducky",                  // 2: Product
-  "RP2040",                      // 3: Serials
-  "Ducky HID",                   // 4: HID String
-  "Ducky Drive",                 // 5: MSC String
+  "pico_usb",                  // 2: Product
+  "RP2350 pico_usb",                      // 3: Serials
+  "pico_usb HID",                   // 4: HID String
+  "pico_usb Drive",                 // 5: MSC String
 };
 
 static uint16_t _desc_str[32];

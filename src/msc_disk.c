@@ -1,25 +1,3 @@
-#include "ws2812.pio.h"
-
-void put_pixel(uint32_t pixel_grb)
-{
-    pio_sm_put_blocking(pio0, 0, pixel_grb << 8u);
-}
-
-void put_rgb(uint8_t red, uint8_t green, uint8_t blue)
-{
-	uint32_t mask = (red << 16) | (green << 8) | (blue << 0);
-    //uint32_t mask = (green << 16) | (red << 8) | (blue << 0);
-    put_pixel(mask);
-}
-
-void init_rgb(){
-	PIO pio = pio0;
-    int sm = 0;
-    uint offset = pio_add_program(pio, &ws2812_program);
-    uint8_t cnt = 0;
-    ws2812_program_init(pio, sm, offset, 22, 800000, true);
-}
-
 /*
  * The MIT License (MIT)
  *
@@ -47,6 +25,8 @@ void init_rgb(){
 
 #include "bsp/board_api.h"
 #include "tusb.h"
+#include "ff.h"
+#include "diskio.h"
 
 #if CFG_TUD_MSC
 
@@ -156,29 +136,7 @@ uint32_t tud_msc_inquiry2_cb(uint8_t lun, scsi_inquiry_resp_t *inquiry_resp, uin
 
   return sizeof(scsi_inquiry_resp_t); // 36 bytes
 }
-
-// Invoked when received Test Unit Ready command.
-// return true allowing host to read/write this LUN e.g SD card inserted
-bool tud_msc_test_unit_ready_cb(uint8_t lun) {
-  (void) lun;
-
-  // RAM disk is ready until ejected
-  if (ejected) {
-    // Additional Sense 3A-00 is NOT_FOUND
-    return tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3a, 0x00);
-  }
-
-  return true;
-}
-
-// Invoked when received SCSI_CMD_READ_CAPACITY_10 and SCSI_CMD_READ_FORMAT_CAPACITY to determine the disk size
-// Application update block count and block size
-void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size) {
-  (void) lun;
-  *block_count = DISK_BLOCK_NUM;
-  *block_size = DISK_BLOCK_SIZE;
-}
-
+/*
 // Invoked when received Start Stop Unit command
 // - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
 // - Start = 1 : active mode, if load_eject = 1 : load disk storage
@@ -196,7 +154,7 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
   }
 
   return true;
-}
+}*/
 
 
 void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4]) {
@@ -209,28 +167,6 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
   (void) strncpy((char*) product_rev, rev, 4);
 }
 
-
-// Callback invoked when received READ10 command.
-// Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
-int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
-  (void) lun;
-
-  // out of ramdisk
-  if (lba >= DISK_BLOCK_NUM) {
-    return -1;
-  }
-
-  // Check for overflow of offset + bufsize
-  if (lba * DISK_BLOCK_SIZE + offset + bufsize > DISK_BLOCK_NUM * DISK_BLOCK_SIZE) {
-    return -1;
-  }
-
-  uint8_t const *addr = msc_disk[lba] + offset;
-  (void) memcpy(buffer, addr, bufsize);
-
-  return (int32_t) bufsize;
-}
-
 bool tud_msc_is_writable_cb(uint8_t lun) {
   (void) lun;
 
@@ -239,28 +175,6 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
   #else
   return true;
   #endif
-}
-
-// Callback invoked when received WRITE10 command.
-// Process data in buffer to disk's storage and return number of written bytes
-int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
-  (void) lun;
-
-  // out of ramdisk
-  if (lba >= DISK_BLOCK_NUM) {
-    return -1;
-  }
-
-  #ifndef CFG_EXAMPLE_MSC_READONLY
-  uint8_t *addr = msc_disk[lba] + offset;
-  (void) memcpy(addr, buffer, bufsize);
-  #else
-  (void) lba;
-  (void) offset;
-  (void) buffer;
-  #endif
-
-  return (int32_t) bufsize;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
@@ -284,4 +198,59 @@ int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, u
 
 
 
+
+// Invoked to determine the size of the disk
+void tud_msc_capacity_cb(uint8_t lun, uint32_t* block_count, uint16_t* block_size) {
+    (void) lun;
+    
+    // Get the sector count from the SD card library
+    DWORD sc;
+    if (disk_ioctl(0, GET_SECTOR_COUNT, &sc) == RES_OK) {
+        *block_count = sc;
+    } else {
+        *block_count = 0; // Error case
+    }
+    
+    *block_size = DISK_BLOCK_SIZE;
+}
+
+// Invoked when host reads from the disk
+int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) {
+    (void) lun;
+    (void) offset;
+
+    // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start, count)
+    DRESULT res = disk_read(0, (BYTE*)buffer, lba, bufsize / DISK_BLOCK_SIZE);
+
+    return (res == RES_OK) ? (int32_t) bufsize : -1;
+}
+
+// Invoked when host writes to the disk
+int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) {
+    (void) lun;
+    (void) offset;
+
+    // Write sectors to SD card
+    DRESULT res = disk_write(0, buffer, lba, bufsize / DISK_BLOCK_SIZE);
+
+    return (res == RES_OK) ? (int32_t) bufsize : -1;
+}
+
+// Invoked when host sends SCSI_CMD_TEST_UNIT_READY 
+// Return true if the SD card is inserted and ready
+bool tud_msc_test_unit_ready_cb(uint8_t lun) {
+    (void) lun;
+    uint8_t status;
+    
+    // Check if card is present
+    if (disk_status(0) & STA_NOINIT) {
+        disk_initialize(0);
+    }
+    
+    return (disk_status(0) & STA_NODISK) ? false : true;
+}
+
+bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
+    (void) lun; (void) power_condition; (void) start; (void) load_eject;
+}
 

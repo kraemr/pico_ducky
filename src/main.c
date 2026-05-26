@@ -37,7 +37,7 @@
 #include "../inc/usb_cdc.h"
 
 extern void execute_usb_cmd_payload(UsbCommand* cmd);
-
+extern bool get_bootsel_button(void);
 #define KEYPRESS_DELAY_MS 50
 
 uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod);
@@ -78,6 +78,18 @@ volatile void main_loop() {
 int main(void) {
     board_init();      
     int32_t res = 0;
+    
+
+    #ifdef BOARD_CONFIRMATION_NEEDED
+        sleep_ms(100); 
+        while(1) {
+            if(!get_bootsel_button()){
+                break;
+            }
+            sleep_ms(1);
+        }
+    #endif
+
     while(res != 1){
       res = get_commands();
     }

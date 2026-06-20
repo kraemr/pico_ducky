@@ -89,17 +89,18 @@ int get_commands() {
         }
         int l = strlen(s);
         size_t position_in_buffer = 0;
+        ParseResult result = {0};
         while(position_in_buffer < l) {
-            ret = parse_line(buf,l,&ktx,&cmds[cmds_len],&position_in_buffer,ret);
-            if(ret == DONE_PRESS) {        
+            ret = parse_line(buf,l,&ktx,&result,&position_in_buffer);
+            cmds[cmds_len] = result.cmds[0];
+            cmds_len++;
+            if(ret == DONE && result.count == 2) {        
+                cmds[cmds_len] = result.cmds[1];
                 cmds_len++;
-                ret = parse_line(buf,l,&ktx,&cmds[cmds_len],&position_in_buffer, ret);
             }
 
             if(ret != DONE){
                 break;
-            }else{
-                cmds_len++;
             }
         }
     }

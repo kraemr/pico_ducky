@@ -18,11 +18,11 @@ void execute_usb_cmd_payload(UsbCommand* cmd){
     uint8_t key_action = NONE;
     uint8_t keys_i = 0;
     uint8_t keymod = 0;
-    uint8_t report_type = cmd->value[0];
-    keymod = cmd->value[1];
+    uint8_t report_type = cmd->value.keys[0];
+    keymod = cmd->value.keys[1];
 
     if(report_type == REPORT_ID_KEYBOARD){
-        uint8_t pressed = send_hid_keyboard_report(&cmd->value[2],keymod);
+        uint8_t pressed = send_hid_keyboard_report(&cmd->value.keys[2],keymod);
     }
 
     current_line++;

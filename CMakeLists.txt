@@ -25,21 +25,15 @@ target_sources(${PROJECT} PUBLIC
 )
 
 add_subdirectory(no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI build)
-
-# Make sure TinyUSB can find tusb_config.h
 target_include_directories(
         pico_ducky 
         PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/inc
 )
-
 pico_enable_stdio_usb(pico_ducky 0)
 pico_enable_stdio_uart(pico_ducky 0)
-
 target_include_directories(pico_ducky PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-
 pico_add_extra_outputs(${PROJECT})
-
 target_link_libraries(
         pico_ducky 
         PUBLIC 
@@ -51,7 +45,3 @@ target_link_libraries(
         tinyusb_board
         tinyusb_device
 )
-
-
-
-

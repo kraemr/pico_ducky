@@ -47,11 +47,16 @@ extern int get_commands(void);
 int32_t run_cmds(uint32_t* prev, uint32_t now, int32_t i) {
     uint32_t should_reset_keys = 0;
     uint16_t reset_key = 0;
-    uint32_t can_send_report = now >= ((*prev) + KEYPRESS_DELAY_MS);
-    if(i < cmds_len && can_send_report) {
+    uint32_t delay_ms = cmds[i].command != DELAY ? KEYPRESS_DELAY_MS : cmds[i].value.delay;
+    uint32_t can_send_report = now >= ((*prev) + delay_ms);
+
+    if(i < cmds_len && cmds[i].command != DELAY && can_send_report) {
       execute_usb_cmd_payload(&cmds[i]);
       i++;      
-    }else{
+    }else if(i < cmds_len && cmds[i].command == DELAY && can_send_report){
+        i++;
+    }
+    else{
       return i;
     }
     (*prev) = board_millis();
@@ -78,9 +83,7 @@ volatile void main_loop() {
 int main(void) {
     board_init();      
     int32_t res = 0;
-    
-
-    #ifdef BOARD_CONFIRMATION_NEEDED
+    #ifdef BOARD_CONFIRMATION_NOT_NEEDED
         sleep_ms(100); 
         while(1) {
             if(!get_bootsel_button()){
@@ -89,10 +92,11 @@ int main(void) {
             sleep_ms(1);
         }
     #endif
-
+    
     while(res != 1){
       res = get_commands();
     }
+
     tusb_init();
     main_loop();
     return 0;

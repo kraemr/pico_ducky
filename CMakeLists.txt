@@ -1,5 +1,4 @@
 set(PROJECT pico_ducky)
-
 cmake_minimum_required(VERSION 3.12)
 set(PICO_BOARD pico2)
 set(PICO_PLATFORM rp2350)

@@ -57,6 +57,7 @@ int closeFile(FatFsState* state){
 int read_script(void* out, unsigned int* out_len, FatFsState* state)
 {
     state->fr = f_read(&state->fil,out,1024,out_len);
+    return state->fr;
 }
 
 FatFsState state;
@@ -68,7 +69,7 @@ UsbCommand cmds[128];
 uint32_t cmds_len = 0;
 
 int get_commands() {
-    KeysContext ktx={0};
+    UsbState ktx={0};
     //unmountFs("0:",&state);
     // Explicitly reset the internal driver state flags
     int ret = initFs("0:",&state);
@@ -104,7 +105,7 @@ int get_commands() {
             }
         }
     }
-    printf("got cmds: %u\n",cmds_len);
+    printf("got cmds: %lu\n",cmds_len);
     ret = 0;
     ret = closeFile(&state);
     printf("closeFile retuns: %d\n",ret);

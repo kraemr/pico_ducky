@@ -61,26 +61,23 @@ int read_script(void* out, unsigned int* out_len, FatFsState* state)
 }
 
 FatFsState state;
-const char name[10] = "script.txt";
 // For now there is a limit 4KB
 char buf[4096]={0};
 // For now limited to 128 Commands
 UsbCommand cmds[128];
 uint32_t cmds_len = 0;
 
-int get_commands() {
-    UsbState ktx={0};
+int get_commands(UsbState* usb_state) {
     //unmountFs("0:",&state);
     // Explicitly reset the internal driver state flags
     int ret = initFs("0:",&state);
     if (ret == 0) {
         return -1;
     }
-    ret = openFile(name, 10, &state);
+    ret = openFile("script.txt", 10, &state);
     if(ret == 0) {
         return -2;
     }
-
     while(1){
         memset(buf,0,4096);
         char* s = f_gets(buf,4096,&state.fil);
@@ -92,14 +89,15 @@ int get_commands() {
         size_t position_in_buffer = 0;
         ParseResult result = {0};
         while(position_in_buffer < l) {
-            ret = parse_line(buf,l,&ktx,&result,&position_in_buffer);
-            cmds[cmds_len] = result.cmds[0];
-            cmds_len++;
+            ret = parse_line(buf,l,usb_state,&result,&position_in_buffer);
+            if(ret == DONE) {
+                cmds[cmds_len] = result.cmds[0];
+                cmds_len++;
+            }
             if(ret == DONE && result.count == 2) {        
                 cmds[cmds_len] = result.cmds[1];
                 cmds_len++;
             }
-
             if(ret != DONE){
                 break;
             }

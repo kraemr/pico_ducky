@@ -1,38 +1,3 @@
-/*#define MOCK_PICO
-#ifdef MOCK_PICO
-  #include <stdio.h>
-  #include <stdint.h>
-
-  uint8_t send_abs_hid_mouse_report(uint16_t x,uint16_t y, uint8_t buttons) {
-    printf("send_abs_hid_mouse_report, x: %u y: %u buttons %u");
-    return 1;
-  }
-
-  uint8_t send_hid_mouse_report(uint8_t deltaX,uint8_t deltaY, uint8_t buttons) {
-    if ( !tud_hid_ready() ) return 0;
-    tud_hid_mouse_report(REPORT_ID_MOUSE,buttons,deltaX,deltaY,0,0);
-    return 1;
-  }
-
-  uint8_t send_hid_consumer_control_report(uint16_t key) {
-    if ( !tud_hid_ready() ) return 0;
-    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &key, 2);
-    return 1;
-  }
-
-  uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod)
-  {
-    // skip if hid is not ready yet
-    if ( !tud_hid_ready() ) return 0;
-    tud_hid_keyboard_report(REPORT_ID_KEYBOARD, key_mod, keycode);
-    return 1;
-  }
-#endif
-*/
-
-
-
-
 #ifndef MOCK_PICO
   #include <sys/types.h>
   #include "bsp/board.h"
@@ -55,7 +20,7 @@
 
   uint8_t send_abs_hid_mouse_report(int16_t x,int16_t y, uint8_t buttons) {
     if ( !tud_hid_ready() ) return 0;
-    tud_hid_abs_mouse_report(REPORT_ID_MOUSE,buttons,x,y,0,0);
+    tud_hid_abs_mouse_report(REPORT_ID_STYLUS_PEN,buttons,x,y,0,0);
     return 1;
   }
 

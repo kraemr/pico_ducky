@@ -24,12 +24,6 @@
     return 1;
   }
 
-  uint8_t send_hid_consumer_control_report(uint16_t key) {
-    if ( !tud_hid_ready() ) return 0;
-    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &key, 2);
-    return 1;
-  }
-
   uint8_t send_hid_keyboard_report(uint8_t keycode[6],uint8_t key_mod)
   {
     // skip if hid is not ready yet
@@ -37,6 +31,14 @@
     tud_hid_keyboard_report(REPORT_ID_KEYBOARD, key_mod, keycode);
     return 1;
   }
+
+
+  uint8_t send_hid_consumer_control_report(uint16_t key) {
+    if ( !tud_hid_ready() ) return 0;
+    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &key, 2);
+    return 1;
+  }
+  
   // Invoked when sent REPORT successfully to host
   void tud_hid_report_complete_cb(uint8_t instance, uint8_t const* report, uint16_t len)
   {

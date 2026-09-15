@@ -25,34 +25,36 @@
  */
 
 #include "bsp/board_api.h"
-#include "tusb.h"
 #include "ff.h"
 #include "diskio.h"
+#include "tusb.h"
 
 #if CFG_TUD_MSC
 const uint32_t DISK_BLOCK_SIZE = 512;
 
 // Invoked when received SCSI_CMD_INQUIRY, v2 with full inquiry response
-// Some inquiry_resp's fields are already filled with default values, application can update them
-// Return length of inquiry response, typically sizeof(scsi_inquiry_resp_t) (36 bytes), can be longer if included vendor data.
-uint32_t tud_msc_inquiry2_cb(uint8_t lun, scsi_inquiry_resp_t *inquiry_resp, uint32_t bufsize) {
-  (void) lun;
-  (void) bufsize;
-  const char* vid = "pico_ducky";
-  const char* pid = "Mass Storage";
-  const char* rev = "1.0";
-  (void) strncpy((char*) inquiry_resp->vendor_id, vid, 11);
-  (void) strncpy((char*) inquiry_resp->product_id, pid, 16);
-  (void) strncpy((char*) inquiry_resp->product_rev, rev, 4);
+// Some inquiry_resp's fields are already filled with default values,
+// application can update them Return length of inquiry response, typically
+// sizeof(scsi_inquiry_resp_t) (36 bytes), can be longer if included vendor
+// data.
+uint32_t tud_msc_inquiry2_cb(uint8_t lun, scsi_inquiry_resp_t *inquiry_resp,
+                             uint32_t bufsize) {
+  (void)lun;
+  (void)bufsize;
+  const char *vid = "pico_ducky";
+  const char *pid = "Mass Storage";
+  const char *rev = "1.0";
+  (void)strncpy((char *)inquiry_resp->vendor_id, vid, 11);
+  (void)strncpy((char *)inquiry_resp->product_id, pid, 16);
+  (void)strncpy((char *)inquiry_resp->product_rev, rev, 4);
   return sizeof(scsi_inquiry_resp_t); // 36 bytes
 }
 /*
 // Invoked when received Start Stop Unit command
 // - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
 // - Start = 1 : active mode, if load_eject = 1 : load disk storage
-bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
-  (void) lun;
-  (void) power_condition;
+bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start,
+bool load_eject) { (void) lun; (void) power_condition;
 
   if (load_eject) {
     if (start) {
@@ -66,92 +68,101 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
   return true;
 }*/
 
-
-void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16], uint8_t product_rev[4]) {
+void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8],
+                        uint8_t product_id[16], uint8_t product_rev[4]) {
   const char vid[] = "TinyUSB";
   const char pid[] = "Mass Storage";
   const char rev[] = "1.0";
 
-  (void) strncpy((char*) vendor_id, vid, 8);
-  (void) strncpy((char*) product_id, pid, 16);
-  (void) strncpy((char*) product_rev, rev, 4);
+  (void)strncpy((char *)vendor_id, vid, 8);
+  (void)strncpy((char *)product_id, pid, 16);
+  (void)strncpy((char *)product_rev, rev, 4);
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
-  (void) lun;
+  (void)lun;
 
-  #ifdef CFG_EXAMPLE_MSC_READONLY
+#ifdef CFG_EXAMPLE_MSC_READONLY
   return false;
-  #else
+#else
   return true;
-  #endif
+#endif
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
 // - READ_CAPACITY10, READ_FORMAT_CAPACITY, INQUIRY, MODE_SENSE6, REQUEST_SENSE
 // - READ10 and WRITE10 has their own callbacks
-int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize) {
-  (void) lun;
-  (void) scsi_cmd;
-  (void) buffer;
-  (void) bufsize;
+int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer,
+                        uint16_t bufsize) {
+  (void)lun;
+  (void)scsi_cmd;
+  (void)buffer;
+  (void)bufsize;
   // currently no other commands are supported
   // Set Sense = Invalid Command Operation
-  (void) tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
+  (void)tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
   return -1; // stall/failed command request;
 }
 #endif
 
 // Invoked to determine the size of the disk
-void tud_msc_capacity_cb(uint8_t lun, uint32_t* block_count, uint16_t* block_size) {
-    (void) lun;
-    
-    // Get the sector count from the SD card library
-    DWORD sc;
-    if (disk_ioctl(0, GET_SECTOR_COUNT, &sc) == RES_OK) {
-        *block_count = sc;
-    } else {
-        *block_count = 0; // Error case
-    }
-    
-    *block_size = DISK_BLOCK_SIZE;
+void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count,
+                         uint16_t *block_size) {
+  (void)lun;
+
+  // Get the sector count from the SD card library
+  DWORD sc;
+  if (disk_ioctl(0, GET_SECTOR_COUNT, &sc) == RES_OK) {
+    *block_count = sc;
+  } else {
+    *block_count = 0; // Error case
+  }
+
+  *block_size = DISK_BLOCK_SIZE;
 }
 
 // Invoked when host reads from the disk
-int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize) {
-    (void) lun;
-    (void) offset;
+int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset,
+                          void *buffer, uint32_t bufsize) {
+  (void)lun;
+  (void)offset;
 
-    // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start, count)
-    DRESULT res = disk_read(0, (BYTE*)buffer, lba, bufsize / DISK_BLOCK_SIZE);
+  // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start,
+  // count)
+  DRESULT res = disk_read(0, (BYTE *)buffer, lba, bufsize / DISK_BLOCK_SIZE);
 
-    return (res == RES_OK) ? (int32_t) bufsize : -1;
+  return (res == RES_OK) ? (int32_t)bufsize : -1;
 }
 
 // Invoked when host writes to the disk
-int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize) {
-    (void) lun;
-    (void) offset;
+int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset,
+                           uint8_t *buffer, uint32_t bufsize) {
+  (void)lun;
+  (void)offset;
 
-    // Write sectors to SD card
-    DRESULT res = disk_write(0, buffer, lba, bufsize / DISK_BLOCK_SIZE);
+  // Write sectors to SD card
+  DRESULT res = disk_write(0, buffer, lba, bufsize / DISK_BLOCK_SIZE);
 
-    return (res == RES_OK) ? (int32_t) bufsize : -1;
+  return (res == RES_OK) ? (int32_t)bufsize : -1;
 }
 
-// Invoked when host sends SCSI_CMD_TEST_UNIT_READY 
+// Invoked when host sends SCSI_CMD_TEST_UNIT_READY
 // Return true if the SD card is inserted and ready
 bool tud_msc_test_unit_ready_cb(uint8_t lun) {
-    (void) lun;    
-    // Check if card is present
-    if (disk_status(0) & STA_NOINIT) {
-        disk_initialize(0);
-    }    
-    return (disk_status(0) & STA_NODISK) ? false : true;
+  (void)lun;
+  // Check if card is present
+  if (disk_status(0) & STA_NOINIT) {
+    disk_initialize(0);
+  }
+  return (disk_status(0) & STA_NODISK) ? false : true;
 }
 
-bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
-    (void) lun; (void) power_condition; (void) start; (void) load_eject;
-    return true;
+bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start,
+                           bool load_eject) {
+  (void)lun;
+  (void)power_condition;
+  (void)start;
+  (void)load_eject;
+  return true;
 }
 #endif

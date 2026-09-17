@@ -127,10 +127,8 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset,
   (void)lun;
   (void)offset;
 
-  // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start,
-  // count)
+  // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start, count)
   DRESULT res = disk_read(0, (BYTE *)buffer, lba, bufsize / DISK_BLOCK_SIZE);
-
   return (res == RES_OK) ? (int32_t)bufsize : -1;
 }
 

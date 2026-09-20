@@ -7,7 +7,6 @@
 #include "ff.h"
 #include <stdint.h>
 #include <stdio.h>
-#include "rtc.h"
 #include "hardware/spi.h"
 #include "hardware/dma.h"
 

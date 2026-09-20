@@ -1,9 +1,9 @@
 [submodule "pico-sdk"]
 	path = pico-sdk
 	url = https://github.com/raspberrypi/pico-sdk
-[submodule "no-OS-FatFS-SD-SPI-RPi-Pico"]
-	path = no-OS-FatFS-SD-SPI-RPi-Pico
-	url = git@github.com:kraemr/no-OS-FatFS-SD-SPI-RPi-Pico.git
 [submodule "usb_script"]
 	path = usb_script
-	url = git@github.com:kraemr/usb_script.git
+	url = https://github.com/kraemr/usb_script
+[submodule "no-OS-FatFS-SD-SDIO-SPI-RPi-Pico"]
+	path = no-OS-FatFS-SD-SDIO-SPI-RPi-Pico
+	url = https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico

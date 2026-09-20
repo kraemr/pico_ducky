@@ -1,6 +1,8 @@
-#include "spi-fatfs.h"
+#include "f_util.h"
+#include "ff.h"
+#include "hw_config.h"
 #include "../usb_script/parser.h"
-#include "spi-fatfs-hwconfig.h"
+#include "spi-fatfs.h"
 #include <stdint.h>
 
 int initFs(const char *volume, FatFsState *state) {

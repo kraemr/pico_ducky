@@ -70,7 +70,7 @@ bool load_eject) { (void) lun; (void) power_condition;
 
 void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8],
                         uint8_t product_id[16], uint8_t product_rev[4]) {
-  const char vid[] = "TinyUSB";
+  const char vid[] = "pico_ducky";
   const char pid[] = "Mass Storage";
   const char rev[] = "1.0";
 

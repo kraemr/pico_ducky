@@ -57,17 +57,16 @@ void main_loop(UsbState *state) {
 
 int main(void) {
   UsbState state = {0};
-  board_init();
   int32_t res = 0;
-#ifdef BOARD_CONFIRMATION_NOT_NEEDED
   sleep_ms(100);
   while (1) {
-    if (!get_bootsel_button()) {
+    if (!gpio_is_pulled_up(5)) {
       break;
     }
     sleep_ms(1);
   }
-#endif
+  board_init();
+  
   while (res != 1) {
     res = get_commands(&state);
   }

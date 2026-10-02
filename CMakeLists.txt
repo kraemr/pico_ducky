@@ -12,6 +12,7 @@ target_sources(${PROJECT} PUBLIC
  ${CMAKE_CURRENT_LIST_DIR}/src/usb_descriptors.c
  ${CMAKE_CURRENT_LIST_DIR}/src/spi-fatfs.c
  ${CMAKE_CURRENT_LIST_DIR}/src/hw_config.c
+ ${CMAKE_CURRENT_LIST_DIR}/src/app_config.c
  ${CMAKE_CURRENT_LIST_DIR}/src/msc_disk.c
  ${CMAKE_CURRENT_LIST_DIR}/src/usb_cdc.c
  ${CMAKE_CURRENT_LIST_DIR}/usb_script/constants.c

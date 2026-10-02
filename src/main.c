@@ -1,4 +1,5 @@
 #ifndef DEBUG
+#include "../inc/app_config.h"
 #include "../inc/tusb_config.h"
 #include "../inc/usb_cdc.h"
 #include "../inc/usb_descriptors.h"
@@ -11,7 +12,6 @@
 #include "usb_descriptors.h"
 #include <bsp/board.h>
 #include <stdint.h>
-#define KEYPRESS_DELAY_MS 50
 
 void execute_usb_cmd_payload(UsbCommand *cmd);
 extern bool get_bootsel_button(void);
@@ -38,10 +38,15 @@ void main_loop(UsbState *state) {
   size_t i = 0;
   uint32_t prev = board_millis();
   uint32_t boot_wait = board_millis();
+  uint8_t btn_pressed = gpio_get(GPIO_CMD_EXEC);
   while (board_millis() - boot_wait < 2000) {
     tud_task();
   }
   sleep_ms(100);
+  // GPIO_CMD_EXEC is active-low 0 -> True
+  if (!btn_pressed) {
+    goto infinite_loop;
+  }
 
   /* Execute All Commands in Order*/
   while (i < cmds_len) {
@@ -50,6 +55,7 @@ void main_loop(UsbState *state) {
     tud_task();
   }
 
+infinite_loop:
   while (1) {
     tud_task();
   }
@@ -59,14 +65,12 @@ int main(void) {
   UsbState state = {0};
   int32_t res = 0;
   sleep_ms(100);
-  while (1) {
-    if (!gpio_is_pulled_up(5)) {
-      break;
-    }
-    sleep_ms(1);
-  }
   board_init();
-  
+
+  gpio_init(GPIO_CMD_EXEC);
+  gpio_set_dir(GPIO_CMD_EXEC, GPIO_IN);
+  gpio_pull_up(GPIO_CMD_EXEC);
+
   while (res != 1) {
     res = get_commands(&state);
   }

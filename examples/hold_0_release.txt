@@ -1,3 +1,0 @@
-HOLD 0,1;
-press 3;
-RELEASE 1;

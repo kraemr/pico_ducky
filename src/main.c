@@ -1,4 +1,3 @@
-#ifndef DEBUG
 #include "../inc/app_config.h"
 #include "../inc/tusb_config.h"
 #include "../inc/usb_cdc.h"
@@ -14,7 +13,6 @@
 #include <stdint.h>
 
 void execute_usb_cmd_payload(UsbCommand *cmd);
-extern bool get_bootsel_button(void);
 extern uint8_t send_hid_keyboard_report(uint8_t keycode[6], uint8_t key_mod);
 extern uint8_t send_hid_mouse_report(uint8_t deltaX, uint8_t deltaY,
                                      uint8_t buttons);
@@ -66,11 +64,9 @@ int main(void) {
   int32_t res = 0;
   sleep_ms(100);
   board_init();
-
   gpio_init(GPIO_CMD_EXEC);
   gpio_set_dir(GPIO_CMD_EXEC, GPIO_IN);
   gpio_pull_up(GPIO_CMD_EXEC);
-
   while (res != 1) {
     res = get_commands(&state);
   }
@@ -78,7 +74,6 @@ int main(void) {
   main_loop(&state);
   return 0;
 }
-#endif
 
 void execute_usb_cmd_payload(UsbCommand *cmd) {
   if (cmd->type == KEYBOARD) {

@@ -22,11 +22,11 @@
  * THE SOFTWARE.
  *
  */
-#include "bsp/board_api.h"
-#include "ff.h"
-#include "diskio.h"
-#include "tusb.h"
 #include "../inc/app_config.h"
+#include "bsp/board_api.h"
+#include "diskio.h"
+#include "ff.h"
+#include "tusb.h"
 
 extern const unsigned int DISK_BLOCK_SIZE;
 
@@ -44,13 +44,13 @@ uint32_t tud_msc_inquiry2_cb(uint8_t lun, scsi_inquiry_resp_t *inquiry_resp,
 
 void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8],
                         uint8_t product_id[16], uint8_t product_rev[4]) {
-/*  const char vid[] = "pico_ducky";
-  const char pid[] = "Mass Storage";
-  const char rev[] = "1.0";
+  /*  const char vid[] = "pico_ducky";
+    const char pid[] = "Mass Storage";
+    const char rev[] = "1.0";
 
-  (void)strncpy((char *)vendor_id, vid, 8);
-  (void)strncpy((char *)product_id, pid, 16);
-  (void)strncpy((char *)product_rev, rev, 4);*/
+    (void)strncpy((char *)vendor_id, vid, 8);
+    (void)strncpy((char *)product_id, pid, 16);
+    (void)strncpy((char *)product_rev, rev, 4);*/
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
@@ -92,7 +92,8 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset,
   (void)lun;
   (void)offset;
 
-  // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start, count)
+  // Read sectors from SD card: disk_read(physical_drive, buffer, sector_start,
+  // count)
   DRESULT res = disk_read(0, (BYTE *)buffer, lba, bufsize / DISK_BLOCK_SIZE);
   return (res == RES_OK) ? (int32_t)bufsize : -1;
 }

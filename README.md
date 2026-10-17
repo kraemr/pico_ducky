@@ -1,6 +1,9 @@
 # pico_ducky
 
 This software is distributed under GPLv3. You are allowed to use this software for an open-source project with a compatible license.
+The Pi pico acts as a "rubberducky" essentially acting as a Usb-Stick,Mouse,Keyboard and Stylus at the same time with the ability to script mouse movements,keyboard presses,delays etc.
+
+The Pi pico reads script.txt in its sdcards FAT Filesystem and executes it.
 
 NOTE:
 Clone with --recurse-submodules
@@ -31,6 +34,7 @@ const unsigned char GPIO_CMD_EXEC = 24;
 ## Scripting Commands
 The language and current commands available are intentionally kept small and simple. 
 There will be an extension for n-key rollover and some other improvements.
+
 These are the currently implemented commands:
 ```c
 // hold key 0 and 1 and release 0
